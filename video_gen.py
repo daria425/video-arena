@@ -38,14 +38,14 @@ class VideoGenerator():
                 return result
             time.sleep(1)
 
-    def run(self, prompt: str, download_path: str = f"./output/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4") -> VideoInfo:
+    def run(self, prompt: str, download_path: str = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4") -> VideoInfo:
         self.submit_request(prompt)
         result = self.get_result()
         print("Video generation completed", result)
         video_url = result["video"]["url"]
         file_size = result["video"]["file_size"]
         generated_at = datetime.now()
-        seed = result["video"]["seed"]
+        seed = result["seed"]
         video_content = get_video(video_url)
         local_path = download_video(video_content, download_path)
         info = VideoInfo(

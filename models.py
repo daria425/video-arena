@@ -7,10 +7,15 @@ class VideoMetadata(BaseModel):
     prompt: str
     file_size: int
     seed: int
-    # duration_seconds: float
 
 
 class VideoInfo(BaseModel):
     video_url: str
     saved_path: str
     metadata: VideoMetadata
+
+
+class VideoFrame(BaseModel):
+    idx: int
+    image: bytes
+    timestamp_s: float
