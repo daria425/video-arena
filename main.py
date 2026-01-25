@@ -1,5 +1,7 @@
 from process import sample_frames
 from video_gen import VideoGenerator
+from models import JudgeEval
+from utils.llm_utils import _call_gemini_with_image_list
 
 if __name__ == "__main__":
     video_gen = VideoGenerator()
@@ -7,8 +9,19 @@ if __name__ == "__main__":
     video_info = video_gen.run(prompt)
     print(f"Generated video saved at: {video_info.saved_path}")
     frames = sample_frames(video_info.saved_path)
-    for f in frames:
-        img_path = f"output/frames/frame_{f.idx}_t{f.timestamp_s:.2f}s.png"
-        print(f"Frame image saved at: {img_path}")
-        with open(img_path, 'wb') as file:
-            file.write(f.image)
+    image_bytes_list = [img.image for img in frames]
+    user_prompts = [
+        f"Frame {f.idx} at {f.timestamp_s:.2f}s"
+        for f in frames
+    ]
+    # Add generation prompt at end
+    user_prompts.append(f"Original prompt: {prompt}")
+    print(f"DEBUG: Sampled {len(frames)} frames")  # Add this
+    print(f"DEBUG: image_bytes_list length: {len(image_bytes_list)}")
+    print(f"DEBUG: user_prompts length: {len(user_prompts)}")
+    _call_gemini_with_image_list(
+        image_bytes_list=image_bytes_list,
+        user_prompt_list=user_prompts,
+        system_prompt_path="./prompts/alignment.txt",
+        response_schema=JudgeEval
+    )

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 
@@ -19,3 +19,8 @@ class VideoFrame(BaseModel):
     idx: int
     image: bytes
     timestamp_s: float
+
+
+class JudgeEval(BaseModel):
+    score: float
+    reason: str
