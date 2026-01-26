@@ -12,11 +12,10 @@ def _call_gemini_with_image_list(
     *,
     image_bytes_list: List[bytes],
     user_prompt_list: List[str],
-    system_prompt_path: str,
+    system_instruction: str,
     response_schema: Optional[Type[T]] = None,
     model: str = "gemini-2.5-pro",
 ):
-    system_instruction = format_prompt(system_prompt_path)
     parts = []
 
     for image_bytes, user_prompt in zip(image_bytes_list, user_prompt_list):

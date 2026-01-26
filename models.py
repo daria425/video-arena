@@ -1,3 +1,4 @@
+from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -24,3 +25,10 @@ class VideoFrame(BaseModel):
 class JudgeEval(BaseModel):
     score: float
     reason: str
+
+
+class Report(BaseModel):
+    input: Dict[str, Any]
+    scores: Dict[str, float]
+    verdict: str
+    details: List[Dict]
