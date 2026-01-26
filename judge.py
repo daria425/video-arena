@@ -22,6 +22,7 @@ class GeminiJudge(BaseJudge):
             image_bytes_list=images,
             user_prompt_list=user_prompts,
             system_instruction=system_prompt,
-            **kwargs
+            response_schema=JudgeEval,
+            ** kwargs
         )
         return response
