@@ -9,4 +9,4 @@ video_generator = VideoGenerator()
 report = video_eval_orchestrator.run(judge, video_generator)
 # print(report)
 with open("output/evaluation_report.json", "w") as f:
-    f.write(report.model_dump())
+    f.write(report.model_dump_json(indent=2))

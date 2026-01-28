@@ -32,3 +32,4 @@ class Report(BaseModel):
     scores: Dict[str, float]
     verdict: str
     details: List[Dict]
+    total_attempts: int = 1
