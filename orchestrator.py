@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 from functools import wraps
 from utils.format import format_prompt
@@ -7,6 +7,8 @@ from judge import BaseJudge
 from models import JudgeEval, Report
 from process import sample_frames
 from video_gen import VideoGenerator
+from corruption import VideoInterceptor
+from models import InterceptorConfig
 
 
 def retry_on_failure(max_attempts=3, pass_threshold=0.8):
@@ -51,9 +53,10 @@ def retry_on_failure(max_attempts=3, pass_threshold=0.8):
 
 
 class VideoEvaluationOrchestrator:
-    def __init__(self, video_gen_prompt: str):
+    def __init__(self, video_gen_prompt: str, intercept_video: Optional[bool] = False):
         self.video_gen_prompt = video_gen_prompt
         self.input_data = {}
+        self.use_interceptor = intercept_video
 
     def node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge, prompt_criterion: str):
         system_prompt = format_prompt(f"./prompts/{prompt_criterion}.txt")
@@ -65,28 +68,35 @@ class VideoEvaluationOrchestrator:
     def temporal_consistency_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge):
         return self.node(images=images, user_prompts=user_prompts, judge=judge, prompt_criterion="temporal_consistency")
 
-    def create_judge_input(self, video_generator: VideoGenerator) -> tuple:
+    def create_judge_input(self, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> tuple:
         video_info = video_generator.run(self.video_gen_prompt)
         video_id = Path(video_info.saved_path).stem
+        video_prompt = self.video_gen_prompt
+        video_path = video_info.saved_path
+        if self.use_interceptor:
+            interceptor = VideoInterceptor(video_path, interceptor_config)
+            new_data = interceptor.intercept()
+            video_prompt = new_data.new_prompt
+            video_path = new_data.new_video_path
         self.input_data = {
-            "prompt": self.video_gen_prompt,
+            "prompt": video_prompt,
             "video_id": video_id
             # add duration, num frames, fps etc later
         }
-        frames = sample_frames(video_info.saved_path)
+        frames = sample_frames(video_path)
         image_bytes_list = [img.image for img in frames]
         user_prompts = [
             f"Frame {f.idx} at {f.timestamp_s:.2f}s"
             for f in frames
         ]
-        # Add generation prompt at end
-        user_prompts.append(f"Original prompt: {self.video_gen_prompt}")
+        # Add generation prompt at end for llm
+        user_prompts.append(f"Original prompt: {video_prompt}")
         return (image_bytes_list, user_prompts)
 
     @retry_on_failure()
-    def run(self, judge: BaseJudge, video_generator: VideoGenerator) -> Report:
+    def run(self, judge: BaseJudge, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
         images, user_prompts = self.create_judge_input(
-            video_generator=video_generator)
+            video_generator=video_generator, interceptor_config=interceptor_config)
         details = []
         scores = {}
         alignment_response = self.alignment_node(

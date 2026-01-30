@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Literal
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -33,3 +33,12 @@ class Report(BaseModel):
     verdict: str
     details: List[Dict]
     total_attempts: int = 1
+
+
+class InterceptedVideoData(BaseModel):
+    new_prompt: Optional[str] = None
+    new_video_path: Optional[str] = None
+
+
+class InterceptorConfig(BaseModel):
+    attribute: Literal["temporal", "alignment", "both"]
