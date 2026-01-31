@@ -1,6 +1,8 @@
 from typing import List, Optional
+import json
 from pathlib import Path
 from functools import wraps
+from datetime import datetime
 from utils.format import format_prompt
 from utils.calculate import calculate_overall_score
 from config.logger import logger
@@ -9,7 +11,7 @@ from models import JudgeEval, Report
 from process import sample_frames
 from video_gen import VideoGenerator
 from corruption import VideoInterceptor
-from models import InterceptorConfig
+from models import InterceptorConfig, Report
 
 
 def retry_on_failure(max_attempts=3, pass_threshold=0.8):
@@ -129,5 +131,8 @@ class VideoEvaluationOrchestrator:
             verdict = "needs_review"
         else:
             verdict = "fail"
-
-        return Report(input=self.input_data, scores=scores, verdict=verdict, details=details)
+        report = Report(input=self.input_data, scores=scores,
+                        verdict=verdict, details=details)
+        with open(f"output/evaluation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:
+            f.write(report.model_dump_json(indent=2))
+        return report

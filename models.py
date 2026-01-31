@@ -40,5 +40,15 @@ class InterceptedVideoData(BaseModel):
     new_video_path: Optional[str] = None
 
 
+class TemporalCorruptionConfig(BaseModel):
+    """Config for temporal consistency breaking"""
+    reverse_video: bool = True
+    jumble_frames: bool = True
+    max_frames: Optional[int] = None
+    frame_interval: int = 1
+    fps: Optional[int] = None
+
+
 class InterceptorConfig(BaseModel):
     attribute: Literal["temporal", "alignment", "both"]
+    temporal_corruption_config: Optional[TemporalCorruptionConfig] = None

@@ -1,6 +1,7 @@
 from typing import Optional, TypeVar, Type, List
 from pydantic import BaseModel
 from config.genai_client import client as google_client
+from config.logger import logger
 from utils.format import format_prompt
 from utils.file_utils import create_image_input
 from google.genai import types
@@ -42,7 +43,7 @@ def _call_gemini_with_image_list(
         contents=contents,
         config=generation_config,
     )
-
+    logger.debug(f"Recieved response: {response}")
     if response_schema:
         return response.parsed
     return response.text

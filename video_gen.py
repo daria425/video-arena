@@ -42,7 +42,7 @@ class VideoGenerator():
     def run(self, prompt: str, download_path: str = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4") -> VideoInfo:
         self.submit_request(prompt)
         result = self.get_result()
-        logger.info("Video generation completed", result)
+        logger.info("Video generation completed")
         video_url = result["video"]["url"]
         file_size = result["video"]["file_size"]
         generated_at = datetime.now()
