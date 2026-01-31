@@ -3,6 +3,7 @@ from pathlib import Path
 from functools import wraps
 from utils.format import format_prompt
 from utils.calculate import calculate_overall_score
+from config.logger import logger
 from judge import BaseJudge
 from models import JudgeEval, Report
 from process import sample_frames
@@ -17,33 +18,31 @@ def retry_on_failure(max_attempts=3, pass_threshold=0.8):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             for attempt in range(1, max_attempts + 1):
-                print(f"\n{'=' * 50}")
-                print(f"Attempt {attempt}/{max_attempts}")
-                print(f"{'=' * 50}")
+                logger.info(f"Attempt {attempt}/{max_attempts}")
 
                 result: Report = func(self, *args, **kwargs)
 
-                print(
+                logger.info(
                     f"Overall: {result.scores['overall']:.2f} | Verdict: {result.verdict}")
 
                 # Check if passed
                 if result.verdict == "pass":
-                    print(f"✓ Passed on attempt {attempt}!")
+                    logger.info(f"Passed on attempt {attempt}!")
                     result.input["total_attempts"] = attempt
                     return result
 
                 # Log failures
-                print("Evaluation failed:")
+                logger.warning("Evaluation failed:")
                 for detail in result.details:
                     if detail["score"] < pass_threshold:
-                        print(
+                        logger.warning(
                             f"  - {detail['criteria']}: {detail['score']:.2f}")
 
                 # Decide to retry or stop
                 if attempt < max_attempts:
-                    print("Regenerating video...")
+                    logger.debug("Regenerating video...")
                 else:
-                    print("Max attempts reached.")
+                    logger.error("Max attempts reached.")
                     result.input["total_attempts"] = attempt
                     return result
 
@@ -74,7 +73,8 @@ class VideoEvaluationOrchestrator:
         video_prompt = self.video_gen_prompt
         video_path = video_info.saved_path
         if self.use_interceptor:
-            interceptor = VideoInterceptor(video_path, interceptor_config)
+            interceptor = VideoInterceptor(
+                video_path, video_prompt, interceptor_config)
             new_data = interceptor.intercept()
             video_prompt = new_data.new_prompt
             video_path = new_data.new_video_path

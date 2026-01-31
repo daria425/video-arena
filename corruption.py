@@ -14,7 +14,7 @@ class VideoInterceptor:
         broken_video = jumble_video(reversed_video)
         return broken_video
 
-    def break_brompt_alignment(self):
+    def break_prompt_alignment(self):
         # TO-DO replace with llm logic later
         return "Some different prompt"
 
@@ -22,12 +22,12 @@ class VideoInterceptor:
         if not self.config or self.config.attribute == "both":
             # use both by default
             return InterceptedVideoData(
-                new_prompt=self.break_brompt_alignment(),
+                new_prompt=self.break_prompt_alignment(),
                 new_video_path=self.break_temporal_consistency()
             )
-        elif self.config.attribute == "alignment":
+        if self.config.attribute == "alignment":
             return InterceptedVideoData(
-                new_prompt=self.break_brompt_alignment(),
+                new_prompt=self.break_prompt_alignment(),
                 new_video_path=self.video_path  # original
             )
         else:

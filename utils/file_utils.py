@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import shutil
 from config.genai_client import client as google_client
+from config.logger import logger
 import requests
 import glob
 import random
@@ -58,7 +59,7 @@ def jumble_video(video_path, max_frames=None, frame_interval=1, fps=None):
         ], check=True, capture_output=True)
 
         shutil.move(temp_out, video_path)
-        print(f"Shuffled {len(frames)} frames using ffmpeg")
+        logger.info(f"Shuffled {len(frames)} frames using ffmpeg")
 
     return video_path
 
@@ -74,7 +75,7 @@ def reverse_video(video_path: str):
     ]
     subprocess.run(cmd, check=True, capture_output=True)
     shutil.move(temp_out, video_path)
-    print("Reversed video using ffmpeg")
+    logger.info("Reversed video using ffmpeg")
     return video_path
 
 
@@ -90,7 +91,7 @@ def download_video(video_content: bytes, output_path: str) -> str:
     with open(output_path, 'wb') as f:
         f.write(video_content)
 
-    print(f"Video downloaded to: {output_path}")
+    logger.info(f"Video downloaded to: {output_path}")
     return output_path
 
 

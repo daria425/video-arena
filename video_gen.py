@@ -5,6 +5,7 @@ import fal_client
 from fal_client.client import Completed
 from dotenv import load_dotenv
 from utils.file_utils import download_video, get_video
+from config.logger import logger
 from models import VideoInfo
 load_dotenv()
 
@@ -31,7 +32,7 @@ class VideoGenerator():
     def get_result(self):
         while True:
             status = self.fetch_status()
-            print(f"Current status: {status}")
+            logger.info(f"Current status: {status}")
             if isinstance(status, Completed):
                 result = fal_client.result(
                     self.model, self.request_id)
@@ -41,7 +42,7 @@ class VideoGenerator():
     def run(self, prompt: str, download_path: str = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4") -> VideoInfo:
         self.submit_request(prompt)
         result = self.get_result()
-        print("Video generation completed", result)
+        logger.info("Video generation completed", result)
         video_url = result["video"]["url"]
         file_size = result["video"]["file_size"]
         generated_at = datetime.now()
@@ -66,4 +67,4 @@ if __name__ == "__main__":
     video_gen = VideoGenerator()
     prompt = "A sleek sci-fi rocketship launching vertically from the center of a vast lavender field at sunset. Endless rows of blooming purple lavender stretch toward the horizon, gently swaying from the rocket’s exhaust. The sky is filled with soft purple and pink clouds, glowing with warm golden sunset light. The rocket emits a bright white-violet flame and glowing thrusters, creating swirling dust and petals near the ground. Cinematic wide shot, epic scale, fantasy sci-fi atmosphere, soft volumetric lighting, shallow haze near the horizon, high detail, smooth motion, dramatic yet serene mood."
     video_info = video_gen.run(prompt)
-    print(f"Generated video saved at: {video_info.saved_path}")
+    logger.info(f"Generated video saved at: {video_info.saved_path}")
