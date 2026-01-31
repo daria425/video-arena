@@ -69,6 +69,12 @@ class VideoEvaluationOrchestrator:
     def temporal_consistency_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge):
         return self.node(images=images, user_prompts=user_prompts, judge=judge, prompt_criterion="temporal_consistency")
 
+    def aesthetic_quality_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge) -> JudgeEval:
+        return self.node(images=images, user_prompts=user_prompts, judge=judge, prompt_criterion="aesthetic_quality")
+
+    def technical_quality_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge):
+        return self.node(images=images, user_prompts=user_prompts, judge=judge, prompt_criterion="technical_quality")
+
     def create_judge_input(self, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> tuple:
         video_info = video_generator.run(self.video_gen_prompt)
         video_id = Path(video_info.saved_path).stem
@@ -121,9 +127,29 @@ class VideoEvaluationOrchestrator:
                 "reasoning": temporal_response.reason
             }
         )
+        aesthetic_quality_response = self.aesthetic_quality_node(
+            images=images, user_prompts=user_prompts, judge=judge)
+        details.append(
+            {
+                "criteria": "aesthetic_quality",
+                "score": aesthetic_quality_response.score,
+                "reasoning": aesthetic_quality_response.reason
+            }
+        )
+        scores["aesthetic_quality"] = aesthetic_quality_response.score
+        technical_quality_response = self.technical_quality_node(
+            images=images, user_prompts=user_prompts, judge=judge)
+        scores["technical_quality"] = technical_quality_response.score
+        details.append(
+            {
+                "criteria": "technical_quality",
+                "score": technical_quality_response.score,
+                "reasoning": technical_quality_response.reason
+            }
+        )
         overall = calculate_overall_score(
-            scores=[scores["prompt_alignment"], scores["temporal_consistency"]
-                    ], weights=[0.6, 0.4])
+            scores=[scores["prompt_alignment"], scores["temporal_consistency"], scores["aesthetic_quality"], scores["technical_quality"]
+                    ], weights=[0.5, 0.3, 0.1, 0.1])
         scores["overall"] = overall
         if overall >= 0.8:
             verdict = "pass"

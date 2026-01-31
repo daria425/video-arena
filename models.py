@@ -41,7 +41,7 @@ class InterceptedVideoData(BaseModel):
 
 
 class TemporalCorruptionConfig(BaseModel):
-    """Config for temporal consistency breaking"""
+    """Config for temporal consistency breaking (WIP just for fun)"""
     reverse_video: bool = True
     jumble_frames: bool = True
     max_frames: Optional[int] = None
