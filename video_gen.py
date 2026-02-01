@@ -29,8 +29,12 @@ class VideoGenerator():
         status = fal_client.status(self.model, self.request_id, with_logs=True)
         return status
 
-    def get_result(self):
+    def get_result(self, timeout: int = 600):
+        start_time = time.time()
         while True:
+            if time.time() - start_time > timeout:
+                raise TimeoutError(
+                    f"Video generation failed after {timeout} seconds")
             status = self.fetch_status()
             logger.info(f"Current status: {status}")
             if isinstance(status, Completed):

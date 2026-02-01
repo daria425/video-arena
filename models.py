@@ -63,3 +63,9 @@ class ArenaReport(BaseModel):
     prompt: str
     results: List[Report]
     winner: str
+
+
+class ArenaRunFailure(BaseModel):
+    model: str
+    error: str
+    error_type: str

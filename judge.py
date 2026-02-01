@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import List
-from utils.llm_utils import _call_gemini_with_image_list
+from utils.gemini import _call_gemini_with_image_list
 from models import JudgeEval
 
 
