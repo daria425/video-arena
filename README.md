@@ -1,0 +1,3 @@
+# Video Arena
+
+An LLM-as-a-judge evaluation system for text-to-video and image-to-video generation models. Rather than asking an LLM to "watch" raw video, the system extracts structured evidence (sampled frames with timestamps) and evaluates it across multiple criteria: prompt alignment, temporal consistency, technical quality, and aesthetic quality. Each evaluation produces a scored report with cited evidence referencing specific frames. The arena mode runs the same prompt through multiple video generation models and ranks them by overall performance, enabling systematic comparison of model capabilities.

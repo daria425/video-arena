@@ -52,3 +52,14 @@ class TemporalCorruptionConfig(BaseModel):
 class InterceptorConfig(BaseModel):
     attribute: Literal["temporal", "alignment", "both"]
     temporal_corruption_config: Optional[TemporalCorruptionConfig] = None
+
+
+class ArenaRun(BaseModel):
+    model: str
+    report: Report
+
+
+class ArenaReport(BaseModel):
+    prompt: str
+    results: List[Report]
+    winner: str

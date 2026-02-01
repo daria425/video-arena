@@ -1,7 +1,5 @@
 from typing import List, Optional
-import json
 from pathlib import Path
-from functools import wraps
 from datetime import datetime
 from utils.format import format_prompt
 from utils.calculate import calculate_overall_score
@@ -14,45 +12,6 @@ from corruption import VideoInterceptor
 from models import InterceptorConfig, Report
 
 
-def retry_on_failure(max_attempts=3, pass_threshold=0.8):
-    """Decorator to retry video generation if evaluation fails"""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            for attempt in range(1, max_attempts + 1):
-                logger.info(f"Attempt {attempt}/{max_attempts}")
-
-                result: Report = func(self, *args, **kwargs)
-
-                logger.info(
-                    f"Overall: {result.scores['overall']:.2f} | Verdict: {result.verdict}")
-
-                # Check if passed
-                if result.verdict == "pass":
-                    logger.info(f"Passed on attempt {attempt}!")
-                    result.input["total_attempts"] = attempt
-                    return result
-
-                # Log failures
-                logger.warning("Evaluation failed:")
-                for detail in result.details:
-                    if detail["score"] < pass_threshold:
-                        logger.warning(
-                            f"  - {detail['criteria']}: {detail['score']:.2f}")
-
-                # Decide to retry or stop
-                if attempt < max_attempts:
-                    logger.debug("Regenerating video...")
-                else:
-                    logger.error("Max attempts reached.")
-                    result.input["total_attempts"] = attempt
-                    return result
-
-            return result
-        return wrapper
-    return decorator
-
-
 class VideoEvaluationOrchestrator:
     def __init__(self, video_gen_prompt: str, intercept_video: Optional[bool] = False):
         self.video_gen_prompt = video_gen_prompt
@@ -61,6 +20,7 @@ class VideoEvaluationOrchestrator:
 
     def node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge, prompt_criterion: str):
         system_prompt = format_prompt(f"./prompts/{prompt_criterion}.txt")
+        logger.info(f"Evaluating {prompt_criterion}")
         return judge.evaluate(images=images, user_prompts=user_prompts, system_prompt=system_prompt)
 
     def alignment_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge) -> JudgeEval:
@@ -101,10 +61,7 @@ class VideoEvaluationOrchestrator:
         user_prompts.append(f"Original prompt: {video_prompt}")
         return (image_bytes_list, user_prompts)
 
-    @retry_on_failure()
-    def run(self, judge: BaseJudge, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
-        images, user_prompts = self.create_judge_input(
-            video_generator=video_generator, interceptor_config=interceptor_config)
+    def run_nodes(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge) -> Report:
         details = []
         scores = {}
         alignment_response = self.alignment_node(
@@ -157,8 +114,14 @@ class VideoEvaluationOrchestrator:
             verdict = "needs_review"
         else:
             verdict = "fail"
-        report = Report(input=self.input_data, scores=scores,
-                        verdict=verdict, details=details)
+        return Report(input=self.input_data, scores=scores,
+                      verdict=verdict, details=details)
+
+    def run(self, judge: BaseJudge, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
+        images, user_prompts = self.create_judge_input(
+            video_generator=video_generator, interceptor_config=interceptor_config)
+        report = self.run_nodes(
+            images=images, user_prompts=user_prompts, judge=judge)
         with open(f"output/evaluation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:
             f.write(report.model_dump_json(indent=2))
         return report
