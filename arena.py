@@ -1,6 +1,6 @@
 from typing import List
 from judge import BaseJudge
-from video_gen import VideoGenerator
+from video_gen import FalVideoGenerator, BaseVideoGenerator
 from orchestrator import VideoEvaluationOrchestrator
 from config.logger import logger
 from models import ArenaRun, ArenaReport, ArenaRunFailure
@@ -11,8 +11,9 @@ class VideoGenArena:
         self.models = models
         self.judge = judge
 
-    def _video_generator_factory(self) -> List[VideoGenerator]:
-        return [VideoGenerator(model=model) for model in self.models]
+    def _video_generator_factory(self) -> List[BaseVideoGenerator]:
+        # just fal for now
+        return [FalVideoGenerator(model=model) for model in self.models]
 
     def fight(self, orchestrator: VideoEvaluationOrchestrator):
         """Begins a video generation competition among text-to-video models."""

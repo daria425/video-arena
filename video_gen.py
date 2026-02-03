@@ -7,11 +7,17 @@ from dotenv import load_dotenv
 from utils.file_utils import download_video, get_video
 from config.logger import logger
 from models import VideoInfo
-
+from abc import ABC, abstractmethod
 load_dotenv()
 
 
-class VideoGenerator():
+class BaseVideoGenerator(ABC):
+    @abstractmethod
+    def run_video_gen(self, prompt: str, download_path: str = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"):
+        pass
+
+
+class FalVideoGenerator(BaseVideoGenerator):
     def __init__(self, model: Optional[str] = "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video"):
         self.model = model
         self.request_id = None
@@ -44,7 +50,7 @@ class VideoGenerator():
                 return result
             time.sleep(1)
 
-    def run(self, prompt: str, download_path: str = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4") -> VideoInfo:
+    def run_video_gen(self, prompt: str, download_path: str = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4") -> VideoInfo:
         self.submit_request(prompt)
         result = self.get_result()
         logger.info("Video generation completed")
@@ -65,11 +71,3 @@ class VideoGenerator():
 
         )
         return info
-
-
-# example usage:
-# if __name__ == "__main__":
-#     video_gen = VideoGenerator()
-#     prompt = "A sleek sci-fi rocketship launching vertically from the center of a vast lavender field at sunset. Endless rows of blooming purple lavender stretch toward the horizon, gently swaying from the rocket’s exhaust. The sky is filled with soft purple and pink clouds, glowing with warm golden sunset light. The rocket emits a bright white-violet flame and glowing thrusters, creating swirling dust and petals near the ground. Cinematic wide shot, epic scale, fantasy sci-fi atmosphere, soft volumetric lighting, shallow haze near the horizon, high detail, smooth motion, dramatic yet serene mood."
-#     video_info = video_gen.run(prompt)
-#     logger.info(f"Generated video saved at: {video_info.saved_path}")

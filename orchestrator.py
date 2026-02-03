@@ -7,7 +7,7 @@ from config.logger import logger
 from judge import BaseJudge
 from models import JudgeEval, Report, VideoInfo
 from process import sample_frames
-from video_gen import VideoGenerator
+from video_gen import BaseVideoGenerator
 from corruption import VideoInterceptor
 from models import InterceptorConfig, Report
 
@@ -36,11 +36,11 @@ class VideoEvaluationOrchestrator:
     def technical_quality_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge):
         return self.node(images=images, user_prompts=user_prompts, judge=judge, prompt_criterion="technical_quality")
 
-    def _judge_input_from_video_generator(self, video_generator: VideoGenerator) -> VideoInfo:
-        return video_generator.run(self.video_gen_prompt)
+    def _judge_input_from_video_generator(self, video_generator: BaseVideoGenerator) -> VideoInfo:
+        return video_generator.run_video_gen(self.video_gen_prompt)
 
-    def create_judge_input_from_generator(self, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> tuple:
-        video_info = video_generator.run(self.video_gen_prompt)
+    def create_judge_input_from_generator(self, video_generator: BaseVideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> tuple:
+        video_info = video_generator.run_video_gen(self.video_gen_prompt)
         video_id = Path(video_info.saved_path).stem
         video_prompt = self.video_gen_prompt
         video_path = video_info.saved_path
@@ -146,7 +146,7 @@ class VideoEvaluationOrchestrator:
         return Report(input=self.input_data, scores=scores,
                       verdict=verdict, details=details)
 
-    def run(self, judge: BaseJudge, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
+    def run(self, judge: BaseJudge, video_generator: BaseVideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
         if self.existing_video_path:
             images, user_prompts = self.create_judge_input_from_video(
                 interceptor_config)

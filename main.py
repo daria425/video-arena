@@ -1,6 +1,6 @@
 from orchestrator import VideoEvaluationOrchestrator
 from judge import GeminiJudge
-from video_gen import VideoGenerator
+from video_gen import FalVideoGenerator
 from arena import VideoGenArena
 from config.logger import setup_default_logging
 
