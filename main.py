@@ -1,6 +1,7 @@
 from orchestrator import VideoEvaluationOrchestrator
 from judge import GeminiJudge
 from video_gen import VideoGenerator
+from arena import VideoGenArena
 from config.logger import setup_default_logging
 
 setup_default_logging(level=20)
@@ -8,7 +9,9 @@ prompt = "A sleek sci-fi rocketship launching vertically from the center of a va
 video_eval_orchestrator = VideoEvaluationOrchestrator(
     video_gen_prompt=prompt)
 judge = GeminiJudge()
-video_generator = VideoGenerator()
-video_eval_orchestrator.run(
-    judge, video_generator)
-# print(report)
+models = [
+    "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video", "fal-ai/kandinsky5-pro/text-to-video"
+]
+arena = VideoGenArena(models=models, judge=judge)
+result = arena.fight(video_eval_orchestrator)
+print(result)

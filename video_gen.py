@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from utils.file_utils import download_video, get_video
 from config.logger import logger
 from models import VideoInfo
+
 load_dotenv()
 
 
@@ -50,7 +51,7 @@ class VideoGenerator():
         video_url = result["video"]["url"]
         file_size = result["video"]["file_size"]
         generated_at = datetime.now()
-        seed = result["seed"]
+        seed = result.get("seed", "")
         video_content = get_video(video_url)
         local_path = download_video(video_content, download_path)
         info = VideoInfo(

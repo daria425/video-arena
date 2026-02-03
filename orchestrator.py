@@ -5,7 +5,7 @@ from utils.format import format_prompt
 from utils.calculate import calculate_overall_score
 from config.logger import logger
 from judge import BaseJudge
-from models import JudgeEval, Report
+from models import JudgeEval, Report, VideoInfo
 from process import sample_frames
 from video_gen import VideoGenerator
 from corruption import VideoInterceptor
@@ -13,10 +13,11 @@ from models import InterceptorConfig, Report
 
 
 class VideoEvaluationOrchestrator:
-    def __init__(self, video_gen_prompt: str, intercept_video: Optional[bool] = False):
+    def __init__(self, video_gen_prompt: str, existing_video_path: Optional[str] = None, intercept_video: Optional[bool] = False):
         self.video_gen_prompt = video_gen_prompt
         self.input_data = {}
         self.use_interceptor = intercept_video
+        self.existing_video_path = existing_video_path
 
     def node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge, prompt_criterion: str):
         system_prompt = format_prompt(f"./prompts/{prompt_criterion}.txt")
@@ -35,7 +36,10 @@ class VideoEvaluationOrchestrator:
     def technical_quality_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge):
         return self.node(images=images, user_prompts=user_prompts, judge=judge, prompt_criterion="technical_quality")
 
-    def create_judge_input(self, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> tuple:
+    def _judge_input_from_video_generator(self, video_generator: VideoGenerator) -> VideoInfo:
+        return video_generator.run(self.video_gen_prompt)
+
+    def create_judge_input_from_generator(self, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> tuple:
         video_info = video_generator.run(self.video_gen_prompt)
         video_id = Path(video_info.saved_path).stem
         video_prompt = self.video_gen_prompt
@@ -52,6 +56,31 @@ class VideoEvaluationOrchestrator:
             # add duration, num frames, fps etc later
         }
         frames = sample_frames(video_path)
+        image_bytes_list = [img.image for img in frames]
+        user_prompts = [
+            f"Frame {f.idx} at {f.timestamp_s:.2f}s"
+            for f in frames
+        ]
+        # Add generation prompt at end for llm
+        user_prompts.append(f"Original prompt: {video_prompt}")
+        return (image_bytes_list, user_prompts)
+
+    def create_judge_input_from_video(self, interceptor_config: Optional[InterceptorConfig] = None):
+        video_id = Path(self.existing_video_path).stem
+        video_prompt = self.video_gen_prompt
+        video_path = self.existing_video_path
+        if self.use_interceptor:
+            interceptor = VideoInterceptor(
+                video_path, video_prompt, interceptor_config)
+            new_data = interceptor.intercept()
+            video_prompt = new_data.new_prompt
+            video_path = new_data.new_video_path
+        self.input_data = {
+            "prompt": video_prompt,
+            "video_id": video_id
+            # add duration, num frames, fps etc later
+        }
+        frames = sample_frames(self.existing_video_path)
         image_bytes_list = [img.image for img in frames]
         user_prompts = [
             f"Frame {f.idx} at {f.timestamp_s:.2f}s"
@@ -118,8 +147,13 @@ class VideoEvaluationOrchestrator:
                       verdict=verdict, details=details)
 
     def run(self, judge: BaseJudge, video_generator: VideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
-        images, user_prompts = self.create_judge_input(
-            video_generator=video_generator, interceptor_config=interceptor_config)
+        if self.existing_video_path:
+            images, user_prompts = self.create_judge_input_from_video(
+                interceptor_config)
+        else:
+            # generate new
+            images, user_prompts = self.create_judge_input_from_generator(
+                video_generator=video_generator, interceptor_config=interceptor_config)
         report = self.run_nodes(
             images=images, user_prompts=user_prompts, judge=judge)
         with open(f"output/evaluation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:

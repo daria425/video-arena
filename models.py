@@ -61,7 +61,7 @@ class ArenaRun(BaseModel):
 
 class ArenaReport(BaseModel):
     prompt: str
-    results: List[Report]
+    results: List[ArenaRun]
     winner: str
 
 
@@ -69,3 +69,8 @@ class ArenaRunFailure(BaseModel):
     model: str
     error: str
     error_type: str
+
+
+class VideoGenModelConfig(BaseModel):
+    provider: Literal["fal", "openai"]
+    model_id: str

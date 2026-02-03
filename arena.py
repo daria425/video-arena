@@ -22,7 +22,7 @@ class VideoGenArena:
         for generator in generators:
             try:
                 logger.info(
-                    f"Starting evaluation for model: {generator.model}")
+                    f"Starting evaluation run for model: {generator.model}")
                 report = orchestrator.run(
                     judge=self.judge, video_generator=generator)
                 logger.debug(f"Report for model {generator.model}: {report}")
@@ -32,8 +32,8 @@ class VideoGenArena:
                     f"Model {generator.model} failed: {type(e).__name__}: {e}")
                 failures.append(ArenaRunFailure(
                     model=generator.model, error=str(e), error_type=type(e).__name__))
-            if not results:
-                raise RuntimeError(f"All models failed. Failures: {failures}")
+        if not results:
+            raise RuntimeError(f"All models failed. Failures: {failures}")
         ranked = sorted(
             results, key=lambda x: x.report.scores["overall"], reverse=True)
         return ArenaReport(prompt=orchestrator.video_gen_prompt, results=ranked, winner=ranked[0].model)

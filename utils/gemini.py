@@ -60,4 +60,5 @@ def _call_gemini_with_image_list(
         if not parsed:
             raise ValueError(
                 f"Gemini returned empty/invalid response for schema {response_schema.__name__}")
+        return parsed
     return response.text
