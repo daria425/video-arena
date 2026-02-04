@@ -7,11 +7,11 @@ class VideoMetadata(BaseModel):
     generated_at: datetime
     prompt: str
     file_size: int
-    seed: int
+    seed: Optional[int] = None
 
 
 class VideoInfo(BaseModel):
-    video_url: str
+    video_url: Optional[str] = None
     saved_path: str
     metadata: VideoMetadata
 
