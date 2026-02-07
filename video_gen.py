@@ -14,14 +14,18 @@ load_dotenv()
 
 
 class BaseVideoGenerator(ABC):
+    def __init__(self, model: str):
+        self.model = model
+        self._request_id = None
+
     @abstractmethod
-    def run_video_gen(self, prompt: str, download_path: str = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"):
+    def run_video_gen(self, prompt: str, download_path: Optional[str] = None):
         pass
 
 
 class FalVideoGenerator(BaseVideoGenerator):
     def __init__(self, model: Optional[str] = "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video"):
-        self.model = model
+        super().__init__(model)
         self._request_id = None
 
     def submit_request(self, prompt: str):
@@ -80,7 +84,7 @@ class FalVideoGenerator(BaseVideoGenerator):
 
 class OpenAIVideoGenerator(BaseVideoGenerator):
     def __init__(self, model: str = "sora-2"):
-        self.model = model
+        super().__init__(model)
         self._request_id = None
 
     def submit_request(self, prompt: str):
@@ -108,10 +112,14 @@ class OpenAIVideoGenerator(BaseVideoGenerator):
                 return {
                     "video": {
                         "content": video_content,
-                        "file_size": job.size,
+                        "file_size": len(video_content),
                     },
                     "seed": None
                 }
+            elif job.status == "failed":
+                raise RuntimeError(
+                    f"{self.__class__.__name__}: Video generation failed with error {job.error}")
+            time.sleep(5)
 
     def run_video_gen(self, prompt: str, download_path: Optional[str] = None) -> VideoInfo:
         if download_path is None:

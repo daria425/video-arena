@@ -137,14 +137,8 @@ class VideoEvaluationOrchestrator:
             scores=[scores["prompt_alignment"], scores["temporal_consistency"], scores["aesthetic_quality"], scores["technical_quality"]
                     ], weights=[0.5, 0.3, 0.1, 0.1])
         scores["overall"] = overall
-        if overall >= 0.8:
-            verdict = "pass"
-        elif overall >= 0.6:
-            verdict = "needs_review"
-        else:
-            verdict = "fail"
         return Report(input=self.input_data, scores=scores,
-                      verdict=verdict, details=details)
+                      details=details)
 
     def run(self, judge: BaseJudge, video_generator: BaseVideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
         if self.existing_video_path:
@@ -156,6 +150,4 @@ class VideoEvaluationOrchestrator:
                 video_generator=video_generator, interceptor_config=interceptor_config)
         report = self.run_nodes(
             images=images, user_prompts=user_prompts, judge=judge)
-        with open(f"output/evaluation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:
-            f.write(report.model_dump_json(indent=2))
         return report

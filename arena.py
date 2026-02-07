@@ -1,19 +1,29 @@
 from typing import List
 from judge import BaseJudge
-from video_gen import FalVideoGenerator, BaseVideoGenerator
+from video_gen import FalVideoGenerator, BaseVideoGenerator, OpenAIVideoGenerator
 from orchestrator import VideoEvaluationOrchestrator
 from config.logger import logger
-from models import ArenaRun, ArenaReport, ArenaRunFailure
+from models import ArenaRun, ArenaReport, ArenaRunFailure, VideoGenModelConfig
 
 
 class VideoGenArena:
-    def __init__(self, models: List[str], judge: BaseJudge):
-        self.models = models
+    def __init__(self, model_configs: List[VideoGenModelConfig], judge: BaseJudge):
+        self.model_config_list = model_configs
         self.judge = judge
 
     def _video_generator_factory(self) -> List[BaseVideoGenerator]:
-        # just fal for now
-        return [FalVideoGenerator(model=model) for model in self.models]
+        video_generators = []
+        for config in self.model_config_list:
+            if config.provider == "openai":
+                video_generators.append(
+                    OpenAIVideoGenerator(model=config.model_id))
+            elif config.provider == "fal":
+                video_generators.append(
+                    FalVideoGenerator(model=config.model_id))
+            else:
+                raise NotImplementedError(
+                    "Providers other than openai and fal not supported yet")
+        return video_generators
 
     def fight(self, orchestrator: VideoEvaluationOrchestrator):
         """Begins a video generation competition among text-to-video models."""

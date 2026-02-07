@@ -30,7 +30,6 @@ class JudgeEval(BaseModel):
 class Report(BaseModel):
     input: Dict[str, Any]
     scores: Dict[str, float]
-    verdict: str
     details: List[Dict]
     total_attempts: int = 1
 
