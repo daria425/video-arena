@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import List
-from utils.gemini import _call_gemini_with_image_list
+from input_builders import build_gemini_input_with_image_list, build_openai_input_with_image_list
 from models import JudgeEval
 
 
@@ -18,11 +18,20 @@ class GeminiJudge(BaseJudge):
 
     def evaluate(self, images: List[bytes], user_prompts: List[str], system_prompt: str, **kwargs) -> JudgeEval:
         """Evaluate images using Gemini API."""
-        response: JudgeEval = _call_gemini_with_image_list(
+        response: JudgeEval = build_gemini_input_with_image_list(
             image_bytes_list=images,
             user_prompt_list=user_prompts,
             system_instruction=system_prompt,
             response_schema=JudgeEval,
             ** kwargs
         )
+        return response
+
+
+class OpenAIJudge(BaseJudge):
+    """OpenAI-API based LLM judge"""
+
+    def evaluate(self, images, user_prompts, system_prompt, **kwargs):
+        response: JudgeEval = build_openai_input_with_image_list(
+            image_bytes_list=images, user_prompt_list=user_prompts, system_instruction=system_prompt, response_schema=JudgeEval, ** kwargs)
         return response
