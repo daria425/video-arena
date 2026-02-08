@@ -31,26 +31,6 @@ class Report(BaseModel):
     input: Dict[str, Any]
     scores: Dict[str, float]
     details: List[Dict]
-    total_attempts: int = 1
-
-
-class InterceptedVideoData(BaseModel):
-    new_prompt: Optional[str] = None
-    new_video_path: Optional[str] = None
-
-
-class TemporalCorruptionConfig(BaseModel):
-    """Config for temporal consistency breaking (WIP just for fun)"""
-    reverse_video: bool = True
-    jumble_frames: bool = True
-    max_frames: Optional[int] = None
-    frame_interval: int = 1
-    fps: Optional[int] = None
-
-
-class InterceptorConfig(BaseModel):
-    attribute: Literal["temporal", "alignment", "both"]
-    temporal_corruption_config: Optional[TemporalCorruptionConfig] = None
 
 
 class ArenaRun(BaseModel):

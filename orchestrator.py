@@ -8,15 +8,13 @@ from judge import BaseJudge
 from models import JudgeEval, Report, VideoInfo
 from process import sample_frames
 from video_gen import BaseVideoGenerator
-from corruption import VideoInterceptor
-from models import InterceptorConfig, Report
+from models import Report
 
 
 class VideoEvaluationOrchestrator:
-    def __init__(self, video_gen_prompt: str, existing_video_path: Optional[str] = None, intercept_video: Optional[bool] = False):
+    def __init__(self, video_gen_prompt: str, existing_video_path: Optional[str] = None):
         self.video_gen_prompt = video_gen_prompt
         self.input_data = {}
-        self.use_interceptor = intercept_video
         self.existing_video_path = existing_video_path
 
     def node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge, prompt_criterion: str):
@@ -39,17 +37,11 @@ class VideoEvaluationOrchestrator:
     def _judge_input_from_video_generator(self, video_generator: BaseVideoGenerator) -> VideoInfo:
         return video_generator.run_video_gen(self.video_gen_prompt)
 
-    def create_judge_input_from_generator(self, video_generator: BaseVideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> tuple:
+    def create_judge_input_from_generator(self, video_generator: BaseVideoGenerator) -> tuple:
         video_info = video_generator.run_video_gen(self.video_gen_prompt)
         video_id = Path(video_info.saved_path).stem
         video_prompt = self.video_gen_prompt
         video_path = video_info.saved_path
-        if self.use_interceptor:
-            interceptor = VideoInterceptor(
-                video_path, video_prompt, interceptor_config)
-            new_data = interceptor.intercept()
-            video_prompt = new_data.new_prompt
-            video_path = new_data.new_video_path
         self.input_data = {
             "prompt": video_prompt,
             "video_id": video_id
@@ -65,16 +57,9 @@ class VideoEvaluationOrchestrator:
         user_prompts.append(f"Original prompt: {video_prompt}")
         return (image_bytes_list, user_prompts)
 
-    def create_judge_input_from_video(self, interceptor_config: Optional[InterceptorConfig] = None):
+    def create_judge_input_from_video(self):
         video_id = Path(self.existing_video_path).stem
         video_prompt = self.video_gen_prompt
-        video_path = self.existing_video_path
-        if self.use_interceptor:
-            interceptor = VideoInterceptor(
-                video_path, video_prompt, interceptor_config)
-            new_data = interceptor.intercept()
-            video_prompt = new_data.new_prompt
-            video_path = new_data.new_video_path
         self.input_data = {
             "prompt": video_prompt,
             "video_id": video_id
@@ -140,14 +125,14 @@ class VideoEvaluationOrchestrator:
         return Report(input=self.input_data, scores=scores,
                       details=details)
 
-    def run(self, judge: BaseJudge, video_generator: BaseVideoGenerator, interceptor_config: Optional[InterceptorConfig] = None) -> Report:
+    def run(self, judge: BaseJudge, video_generator: BaseVideoGenerator) -> Report:
         if self.existing_video_path:
             images, user_prompts = self.create_judge_input_from_video(
-                interceptor_config)
+            )
         else:
             # generate new
             images, user_prompts = self.create_judge_input_from_generator(
-                video_generator=video_generator, interceptor_config=interceptor_config)
+                video_generator=video_generator)
         report = self.run_nodes(
             images=images, user_prompts=user_prompts, judge=judge)
         return report
