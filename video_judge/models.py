@@ -22,9 +22,16 @@ class VideoFrame(BaseModel):
     timestamp_s: float
 
 
+class Evidence(BaseModel):
+    frame: int
+    timestamp: float
+    finding: str = Field(..., description="Description of the evidence found in the frame, relevant to overall evaluation reasoning")
+
+
 class JudgeEval(BaseModel):
     score: float
     reason: str
+    evidence: List[Evidence]
 
 
 class Report(BaseModel):

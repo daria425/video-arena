@@ -37,3 +37,8 @@
   2. Cite exact frames where issues occur
   3. Assess motion by comparing sequential frame transitions
   4. Justify the final score based on evidence
+
+  OUTPUT FORMAT MODEL: 
+  - score: Overall alignment score (0.0-1.0)
+  - reason: Brief summary of alignment assessment
+  - evidence: Structured list of frame-specific findings (frame number, timestamp, what you observed)

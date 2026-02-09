@@ -83,7 +83,10 @@ class VideoEvaluationOrchestrator:
             {
                 "criteria": "prompt_alignment",
                 "score": alignment_response.score,
-                "reasoning": alignment_response.reason
+                "reasoning": alignment_response.reason,
+                "evidence": [
+                    e.model_dump() for e in alignment_response.evidence
+                ]
             }
         )
         scores["prompt_alignment"] = alignment_response.score
@@ -103,8 +106,13 @@ class VideoEvaluationOrchestrator:
             {
                 "criteria": "aesthetic_quality",
                 "score": aesthetic_quality_response.score,
-                "reasoning": aesthetic_quality_response.reason
+                "reasoning": aesthetic_quality_response.reason,
+                "evidence": [
+                    e.model_dump() for e in aesthetic_quality_response.evidence
+                ]
+
             }
+
         )
         scores["aesthetic_quality"] = aesthetic_quality_response.score
         technical_quality_response = self.technical_quality_node(
@@ -114,7 +122,10 @@ class VideoEvaluationOrchestrator:
             {
                 "criteria": "technical_quality",
                 "score": technical_quality_response.score,
-                "reasoning": technical_quality_response.reason
+                "reasoning": technical_quality_response.reason,
+                "evidence": [
+                    e.model_dump() for e in technical_quality_response.evidence
+                ]
             }
         )
         overall = calculate_overall_score(

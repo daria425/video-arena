@@ -34,3 +34,8 @@
   1. List each prompt requirement                                                                                                                                                     
   2. Cite specific frames where requirement is met/violated                                                                                                                           
   3. Justify the final score based on evidence 
+
+  OUTPUT FORMAT MODEL: 
+  - score: Overall alignment score (0.0-1.0)
+  - reason: Brief summary of alignment assessment
+  - evidence: Structured list of frame-specific findings (frame number, timestamp, what you observed)
