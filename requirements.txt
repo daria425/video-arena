@@ -1,9 +1,11 @@
 annotated-types==0.7.0
+anthropic==0.79.0
 anyio==4.12.1
 certifi==2026.1.4
 charset-normalizer==3.4.4
 decorator==5.2.1
 distro==1.9.0
+docstring_parser==0.17.0
 fal_client==0.11.0
 google-auth==2.47.0
 google-genai==1.60.0
@@ -14,9 +16,11 @@ httpx-sse==0.4.3
 idna==3.11
 ImageIO==2.37.2
 imageio-ffmpeg==0.6.0
+jiter==0.13.0
 moviepy==2.2.1
 msgpack==1.1.2
 numpy==2.4.1
+openai==2.16.0
 opencv-python==4.13.0.90
 pillow==11.3.0
 proglog==0.1.12

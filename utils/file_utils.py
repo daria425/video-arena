@@ -2,7 +2,7 @@ import io
 import subprocess
 import tempfile
 import shutil
-from config.genai_client import client as google_client
+from ai_api_client import google_client
 from config.logger import logger
 import requests
 import glob
@@ -99,7 +99,8 @@ def create_image_input(image_bytes: bytes):
     max_bytes = 15 * 1024 * 1024  # 15 MB
     size = len(image_bytes or b"")
     if size > max_bytes:
-        image_file = google_client.files.upload(file=io.BytesIO(image_bytes))
+        image_file = google_client.client.files.upload(
+            file=io.BytesIO(image_bytes))
         return image_file
     else:
         image_file = types.Part.from_bytes(

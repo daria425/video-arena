@@ -5,8 +5,7 @@ from tenacity import (
 )
 from google.auth.exceptions import GoogleAuthError
 from google.genai.errors import ServerError, ClientError
-from config.genai_client import client as google_client
-from config.openai_client import openai_client
+from ai_api_client import google_client, openai_client, anthropic_client
 from config.logger import logger
 from utils.file_utils import create_image_input
 from google.genai import types
@@ -52,7 +51,7 @@ def build_gemini_input_with_image_list(
 
     contents = types.Content(role="user", parts=parts)
 
-    response = google_client.models.generate_content(
+    response = google_client.client.models.generate_content(
         model=model,
         contents=contents,
         config=generation_config,
@@ -103,15 +102,71 @@ def build_openai_input_with_image_list(
                 "text": extra_prompt
             })
     if response_schema:
-        response = openai_client.responses.parse(model=model, temperature=0,
-                                                 text_format=response_schema, input=input_list, instructions=system_instruction)
+        response = openai_client.client.responses.parse(model=model, temperature=0,
+                                                        text_format=response_schema, input=input_list, instructions=system_instruction)
         parsed = response.output_parsed
         if not parsed:
             raise ValueError(
                 f"OpenAI returned empty/invalid response for schema {response_schema.__name__}")
         return parsed
     else:
-        response = openai_client.responses.create(
+        response = openai_client.client.responses.create(
             model=model, input=input_list, instructions=system_instruction, temperature=0
         )
         return response.output_text
+
+
+def build_claude_input_with_image_list(
+    *,
+    image_bytes_list: List[bytes],
+    user_prompt_list: List[str],
+    system_instruction: str,
+    response_schema: Optional[Type[T]] = None,
+    model: str = "claude-sonnet-3-5",
+):
+    input_list = [
+        {"role": "user", "content": []}
+    ]
+    for image_bytes, user_prompt in zip(image_bytes_list, user_prompt_list):
+        b64_str = base64.b64encode(image_bytes).decode("utf-8")
+        image_input = {
+            "type": "image",
+            "source": {
+                "data": f"data:image/jpeg;base64,{b64_str}",
+                "media_type": "image/jpeg",
+                "type": "base64"
+            }
+        }
+        text_input = {
+            "type": "text",
+            "text": user_prompt
+        }
+        input_list[0]["content"].extend([image_input, text_input])
+    if len(user_prompt_list) > len(image_bytes_list):
+        for extra_prompt in user_prompt_list[len(image_bytes_list):]:
+            input_list[0]["content"].append({
+                "type": "text",
+                "text": extra_prompt
+            })
+    if response_schema:
+        response = anthropic_client.client.messages.parse(
+            messages=input_list,
+            model=model,
+            output_format=response_schema,
+            temperature=0,
+            system=system_instruction
+
+        )
+        parsed = response.parsed_output
+        if not parsed:
+            raise ValueError(
+                f"Claude returned empty/invalid response for schema {response_schema.__name__}")
+        return parsed
+    else:
+        response = anthropic_client.client.messages.create(
+            messages=input_list,
+            model=model,
+            temperature=0,
+            system=system_instruction
+        )
+        return response
