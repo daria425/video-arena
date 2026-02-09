@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import List
-from input_builders import build_gemini_input_with_image_list, build_openai_input_with_image_list
-from models import JudgeEval
+from video_judge.input_builders import build_gemini_input_with_image_list, build_openai_input_with_image_list
+from video_judge.models import JudgeEval
 
 
 class BaseJudge(ABC):

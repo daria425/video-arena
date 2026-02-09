@@ -1,9 +1,9 @@
 from typing import List
-from judge import BaseJudge
-from video_gen import FalVideoGenerator, BaseVideoGenerator, OpenAIVideoGenerator
-from orchestrator import VideoEvaluationOrchestrator
-from config.logger import logger
-from models import ArenaRun, ArenaReport, ArenaRunFailure, VideoGenModelConfig
+from video_judge.judge import BaseJudge
+from video_judge.video_gen import FalVideoGenerator, BaseVideoGenerator, OpenAIVideoGenerator
+from video_judge.orchestrator import VideoEvaluationOrchestrator
+from video_judge.config.logger import logger
+from video_judge.models import ArenaRun, ArenaReport, ArenaRunFailure, VideoGenModelConfig
 
 
 class VideoGenArena:

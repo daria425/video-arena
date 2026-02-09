@@ -1,14 +1,13 @@
 from typing import List, Optional
 from pathlib import Path
 from datetime import datetime
-from utils.format import format_prompt
-from utils.calculate import calculate_overall_score
-from config.logger import logger
-from judge import BaseJudge
-from models import JudgeEval, Report, VideoInfo
-from process import sample_frames
-from video_gen import BaseVideoGenerator
-from models import Report
+from video_judge.utils.format import format_prompt
+from video_judge.utils.calculate import calculate_overall_score
+from video_judge.config.logger import logger
+from video_judge.judge import BaseJudge
+from video_judge.models import JudgeEval, Report, VideoInfo
+from video_judge.process import sample_frames
+from video_judge.video_gen import BaseVideoGenerator
 
 
 class VideoEvaluationOrchestrator:

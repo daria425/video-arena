@@ -5,9 +5,9 @@ from tenacity import (
 )
 from google.auth.exceptions import GoogleAuthError
 from google.genai.errors import ServerError, ClientError
-from ai_api_client import google_client, openai_client, anthropic_client
-from config.logger import logger
-from utils.file_utils import create_image_input
+from video_judge.ai_api_client import google_client, openai_client, anthropic_client
+from video_judge.config.logger import logger
+from video_judge.utils.file_utils import create_image_input
 from google.genai import types
 from openai import AuthenticationError, RateLimitError, PermissionDeniedError
 import base64

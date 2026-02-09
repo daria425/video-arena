@@ -1,0 +1,40 @@
+Metadata-Version: 2.4
+Name: video-judge
+Version: 0.1.0
+Summary: LLM-as-a-Judge evaluation framework for text-to-video models
+Author: Daria
+License: MIT
+Project-URL: Homepage, https://github.com/yourusername/video-judge
+Project-URL: Repository, https://github.com/yourusername/video-judge
+Project-URL: Issues, https://github.com/yourusername/video-judge/issues
+Keywords: video,generation,llm,evaluation,benchmark,judge
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: typer>=0.9.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: opencv-python>=4.8.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: tenacity>=8.2.0
+Requires-Dist: google-genai>=1.0.0
+Requires-Dist: openai>=1.0.0
+Requires-Dist: anthropic>=0.18.0
+Requires-Dist: fal-client>=0.4.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.7.0; extra == "dev"
+Requires-Dist: ruff>=0.0.280; extra == "dev"
+Requires-Dist: mypy>=1.4.1; extra == "dev"
+
+# Video Arena
+
+An LLM-as-a-judge evaluation system for text-to-video and image-to-video generation models. Rather than asking an LLM to "watch" raw video, the system extracts structured evidence (sampled frames with timestamps) and evaluates it across multiple criteria: prompt alignment, temporal consistency, technical quality, and aesthetic quality. Each evaluation produces a scored report with cited evidence referencing specific frames. The arena mode runs the same prompt through multiple video generation models and ranks them by overall performance, enabling systematic comparison of model capabilities.

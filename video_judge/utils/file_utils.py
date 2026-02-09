@@ -2,8 +2,8 @@ import io
 import subprocess
 import tempfile
 import shutil
-from ai_api_client import google_client
-from config.logger import logger
+from video_judge.ai_api_client import google_client
+from video_judge.config.logger import logger
 import requests
 import glob
 import random

@@ -1,7 +1,7 @@
 import cv2
 from typing import List, Dict
 import numpy as np
-from models import VideoFrame
+from video_judge.models import VideoFrame
 
 
 def get_video_metadata(video_path: str) -> dict:

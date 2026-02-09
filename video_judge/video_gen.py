@@ -5,10 +5,11 @@ from typing import Optional
 import fal_client
 from fal_client.client import Completed
 from dotenv import load_dotenv
-from utils.file_utils import download_video, get_video
-from config.openai_client import openai_client
-from config.logger import logger
-from models import VideoInfo
+from video_judge.utils.file_utils import download_video, get_video
+from video_judge.ai_api_client import openai_client
+from video_judge.config.logger import logger
+from video_judge.models import VideoInfo
+from video_judge.ai_api_client import openai_client
 from abc import ABC, abstractmethod
 load_dotenv()
 
@@ -88,12 +89,12 @@ class OpenAIVideoGenerator(BaseVideoGenerator):
         self._request_id = None
 
     def submit_request(self, prompt: str):
-        video_request = openai_client.videos.create(
+        video_request = openai_client.client.videos.create(
             model=self.model, prompt=prompt)
         self._request_id = video_request.id
 
     def fetch_status(self):
-        response = openai_client.videos.retrieve(self._request_id)
+        response = openai_client.client.videos.retrieve(self._request_id)
         return response
 
     def get_result(self, timeout: int = 900):
@@ -106,7 +107,7 @@ class OpenAIVideoGenerator(BaseVideoGenerator):
             logger.info(
                 f"Current status: {job.status}, progress: {job.progress}")
             if job.status == "completed":
-                content = openai_client.videos.download_content(
+                content = openai_client.client.videos.download_content(
                     self._request_id)
                 video_content = content.read()
                 return {
