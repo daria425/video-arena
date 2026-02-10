@@ -1,6 +1,6 @@
 from typing import List
 from video_judge.judge import BaseJudge
-from video_judge.video_gen import FalVideoGenerator, BaseVideoGenerator, OpenAIVideoGenerator
+from video_judge.video_gen import FalVideoGenerator, BaseVideoGenerator, OpenAIVideoGenerator, GoogleVideoGenerator
 from video_judge.orchestrator import VideoEvaluationOrchestrator
 from video_judge.config.logger import logger
 from video_judge.models import ArenaRun, ArenaReport, ArenaRunFailure, VideoGenModelConfig
@@ -20,6 +20,9 @@ class VideoGenArena:
             elif config.provider == "fal":
                 video_generators.append(
                     FalVideoGenerator(model=config.model_id))
+            elif config.provider == "google":
+                video_generators.append(
+                    GoogleVideoGenerator(model=config.model_id))
             else:
                 raise NotImplementedError(
                     "Providers other than openai and fal not supported yet")

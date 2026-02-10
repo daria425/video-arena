@@ -58,5 +58,5 @@ class ArenaRunFailure(BaseModel):
 
 
 class VideoGenModelConfig(BaseModel):
-    provider: Literal["fal", "openai"]
+    provider: Literal["fal", "openai", "google"]
     model_id: str

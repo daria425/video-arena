@@ -1,5 +1,5 @@
 import time
-import requests
+from google.genai import types
 from datetime import datetime
 from typing import Optional
 import fal_client
@@ -9,7 +9,7 @@ from video_judge.utils.file_utils import download_video, get_video
 from video_judge.ai_api_client import openai_client
 from video_judge.config.logger import logger
 from video_judge.models import VideoInfo
-from video_judge.ai_api_client import openai_client
+from video_judge.ai_api_client import openai_client, google_client
 from abc import ABC, abstractmethod
 load_dotenv()
 
@@ -121,6 +121,70 @@ class OpenAIVideoGenerator(BaseVideoGenerator):
                 raise RuntimeError(
                     f"{self.__class__.__name__}: Video generation failed with error {job.error}")
             time.sleep(5)
+
+    def run_video_gen(self, prompt: str, download_path: Optional[str] = None) -> VideoInfo:
+        if download_path is None:
+            download_path = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+
+        self.submit_request(prompt)
+        result = self.get_result()
+        logger.info("Video generation completed")
+
+        video_content = result["video"]["content"]
+        local_path = download_video(video_content, download_path)
+
+        return VideoInfo(
+            saved_path=local_path,
+            metadata={
+                "generated_at": datetime.now(),
+                "prompt": prompt,
+                "file_size": result["video"]["file_size"],
+            }
+        )
+
+
+class GoogleVideoGenerator(BaseVideoGenerator):
+    def __init__(self, model: str = "veo-3.1-fast-generate-preview"):
+        super().__init__(model)
+        self._operation = None
+
+    def submit_request(self, prompt: str):
+        operation = google_client.client.models.generate_videos(
+            model=self.model,
+            prompt=prompt
+        )
+        self._operation = operation
+
+    def fetch_status(self) -> types.GenerateVideosOperation:
+        operation = google_client.client.operations.get(self._operation)
+        self._operation = operation
+
+    def get_result(self, timeout: int = 900):
+        start_time = time.time()
+        while True:
+            if time.time() - start_time > timeout:
+                raise TimeoutError(
+                    f"{self.__class__.__name__}: Video generation failed after {timeout} seconds")
+
+            time.sleep(5)
+
+            self.fetch_status()
+            logger.info(
+                f"Completion status:{self._operation.done}")
+            if self._operation.done:
+                content = self._operation.response.generated_videos[0]
+                uri = content.video.uri
+                video_content = get_video(uri)
+                return {
+                    "video": {
+                        "content": video_content,
+                        "file_size": len(video_content),
+                    },
+                    "seed": None
+                }
+            elif self._operation.error:
+                raise RuntimeError(
+                    f"{self.__class__.__name__}: Video generation failed with error {self._operation.error}")
 
     def run_video_gen(self, prompt: str, download_path: Optional[str] = None) -> VideoInfo:
         if download_path is None:
