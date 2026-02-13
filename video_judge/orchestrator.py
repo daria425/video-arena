@@ -5,16 +5,47 @@ from video_judge.utils.format import format_prompt
 from video_judge.utils.calculate import calculate_overall_score
 from video_judge.config.logger import logger
 from video_judge.judge import BaseJudge
-from video_judge.models import JudgeEval, Report, VideoInfo
+from video_judge.models import JudgeEval, Report, VideoInfo, PromptDecomposition
 from video_judge.process import sample_frames
 from video_judge.video_gen import BaseVideoGenerator
 
 
 class VideoEvaluationOrchestrator:
-    def __init__(self, video_gen_prompt: str, existing_video_path: Optional[str] = None):
+    def __init__(
+        self,
+        video_gen_prompt: str,
+        existing_video_path: Optional[str] = None,
+        prompt_decomposition: Optional[PromptDecomposition] = None,
+    ):
         self.video_gen_prompt = video_gen_prompt
         self.input_data = {}
         self.existing_video_path = existing_video_path
+        self.prompt_decomposition = prompt_decomposition
+
+    def _format_decomposition(self, decomposition: PromptDecomposition) -> str:
+        """Format PromptDecomposition into checklist text."""
+        lines = ["Key criteria - ensure these align with the generated video:"]
+
+        if decomposition.entities:
+            for entity in decomposition.entities:
+                lines.append(f"  - Entity: {entity}")
+
+        if decomposition.actions:
+            for action in decomposition.actions:
+                lines.append(f"  - Action: {action}")
+
+        if decomposition.locations:
+            for location in decomposition.locations:
+                lines.append(f"  - Location: {location}")
+
+        if decomposition.time_of_day:
+            lines.append(f"  - Time: {decomposition.time_of_day}")
+
+        if decomposition.style_attributes:
+            for attr in decomposition.style_attributes:
+                lines.append(f"  - Style: {attr}")
+
+        return "\n".join(lines)
 
     def node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge, prompt_criterion: str):
         system_prompt = format_prompt(f"./prompts/{prompt_criterion}.txt")
@@ -32,9 +63,6 @@ class VideoEvaluationOrchestrator:
 
     def technical_quality_node(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge):
         return self.node(images=images, user_prompts=user_prompts, judge=judge, prompt_criterion="technical_quality")
-
-    def _judge_input_from_video_generator(self, video_generator: BaseVideoGenerator) -> VideoInfo:
-        return video_generator.run_video_gen(self.video_gen_prompt)
 
     def create_judge_input_from_generator(self, video_generator: BaseVideoGenerator) -> tuple:
         video_info = video_generator.run_video_gen(self.video_gen_prompt)
@@ -54,6 +82,12 @@ class VideoEvaluationOrchestrator:
         ]
         # Add generation prompt at end for llm
         user_prompts.append(f"Original prompt: {video_prompt}")
+
+        # Add decomposed criteria if provided
+        if self.prompt_decomposition:
+            user_prompts.append(self._format_decomposition(
+                self.prompt_decomposition))
+
         return (image_bytes_list, user_prompts)
 
     def create_judge_input_from_video(self):
@@ -72,6 +106,12 @@ class VideoEvaluationOrchestrator:
         ]
         # Add generation prompt at end for llm
         user_prompts.append(f"Original prompt: {video_prompt}")
+
+        # Add decomposed criteria if provided
+        if self.prompt_decomposition:
+            user_prompts.append(self._format_decomposition(
+                self.prompt_decomposition))
+
         return (image_bytes_list, user_prompts)
 
     def run_nodes(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge) -> Report:

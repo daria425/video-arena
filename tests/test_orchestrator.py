@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 from video_judge.orchestrator import VideoEvaluationOrchestrator
-from video_judge.models import JudgeEval, Evidence
+from video_judge.models import JudgeEval, Evidence, PromptDecomposition
 
 
 def _mock_judge_eval(score: float) -> JudgeEval:
@@ -81,6 +81,59 @@ class TestCreateJudgeInput:
         assert len(user_prompts) == 3  # 2 frame labels + 1 original prompt
         assert "Frame 0" in user_prompts[0]
         assert "Original prompt: a rocket" in user_prompts[-1]
+
+    def test_user_prompts_include_decomposition_when_provided(self):
+        """When prompt_decomposition is provided, it should be formatted and appended."""
+        decomposition = PromptDecomposition(
+            entities=["rocket"],
+            actions=["launching"],
+            locations=["lavender field"],
+            time_of_day="sunset",
+            style_attributes=["cinematic"],
+        )
+
+        orch = VideoEvaluationOrchestrator(
+            video_gen_prompt="a rocket launching",
+            existing_video_path="/fake/video.mp4",
+            prompt_decomposition=decomposition,
+        )
+
+        from video_judge.models import VideoFrame
+
+        fake_frames = [VideoFrame(idx=0, image=b"img0", timestamp_s=0.0)]
+
+        with patch("video_judge.orchestrator.sample_frames", return_value=fake_frames):
+            images, user_prompts = orch.create_judge_input_from_video()
+
+        # Should have: 1 frame label + original prompt + decomposition
+        assert len(user_prompts) == 3
+        assert "Frame 0" in user_prompts[0]
+        assert "Original prompt:" in user_prompts[1]
+        assert "Key criteria" in user_prompts[2]
+        assert "Entity: rocket" in user_prompts[2]
+        assert "Action: launching" in user_prompts[2]
+        assert "Location: lavender field" in user_prompts[2]
+        assert "Time: sunset" in user_prompts[2]
+        assert "Style: cinematic" in user_prompts[2]
+
+    def test_no_decomposition_when_not_provided(self):
+        """When prompt_decomposition is None, user_prompts should not include criteria."""
+        orch = VideoEvaluationOrchestrator(
+            video_gen_prompt="a rocket",
+            existing_video_path="/fake/video.mp4",
+            prompt_decomposition=None,
+        )
+
+        from video_judge.models import VideoFrame
+
+        fake_frames = [VideoFrame(idx=0, image=b"img0", timestamp_s=0.0)]
+
+        with patch("video_judge.orchestrator.sample_frames", return_value=fake_frames):
+            images, user_prompts = orch.create_judge_input_from_video()
+
+        # Should only have frame label + original prompt (no decomposition)
+        assert len(user_prompts) == 2
+        assert "Key criteria" not in user_prompts[-1]
 
 
 class TestNodeRouting:

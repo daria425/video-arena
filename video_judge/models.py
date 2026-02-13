@@ -60,3 +60,11 @@ class ArenaRunFailure(BaseModel):
 class VideoGenModelConfig(BaseModel):
     provider: Literal["fal", "openai", "google"]
     model_id: str
+
+
+class PromptDecomposition(BaseModel):
+    entities: List[str]  # ["sleek sci-fi rocketship"]
+    actions: List[str]   # ["launching vertically"]
+    locations: List[str]  # ["lavender field"]
+    time_of_day: Optional[str]  # "sunset"
+    style_attributes: List[str]  # ["cinematic", "epic scale"]

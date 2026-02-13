@@ -53,22 +53,29 @@ class TestArenaFight:
         ]
         arena = VideoGenArena(model_configs=configs, judge=mock_judge)
 
-        mock_orchestrator = MagicMock()
-        mock_orchestrator.video_gen_prompt = "test prompt"
-        # model-a gets 0.6, model-b gets 0.9
-        mock_orchestrator.run.side_effect = [
-            _make_report(0.6),
-            _make_report(0.9),
-        ]
+        orchestrator = MagicMock()
+        orchestrator.video_gen_prompt = "test prompt"
+        orchestrator.existing_video_path = None
 
-        with patch.object(arena, "_video_generator_factory") as factory:
+        reports = [_make_report(0.6), _make_report(0.9)]
+        report_iter = iter(reports)
+
+        def mock_orch_run(judge, video_generator):
+            return next(report_iter)
+
+        with patch.object(arena, "_video_generator_factory") as factory, \
+             patch("video_judge.arena.VideoEvaluationOrchestrator") as MockOrch:
             gen_a = MagicMock()
             gen_a.model = "model-a"
             gen_b = MagicMock()
             gen_b.model = "model-b"
             factory.return_value = [gen_a, gen_b]
 
-            result = arena.fight(mock_orchestrator)
+            mock_orch_instance = MagicMock()
+            mock_orch_instance.run.side_effect = mock_orch_run
+            MockOrch.return_value = mock_orch_instance
+
+            result = arena.fight(orchestrator)
 
         assert result.winner == "model-b"
         assert result.results[0].report.scores["overall"] == 0.9
@@ -82,21 +89,28 @@ class TestArenaFight:
         ]
         arena = VideoGenArena(model_configs=configs, judge=mock_judge)
 
-        mock_orchestrator = MagicMock()
-        mock_orchestrator.video_gen_prompt = "test"
-        mock_orchestrator.run.side_effect = [
-            RuntimeError("API down"),
-            _make_report(0.75),
-        ]
+        orchestrator = MagicMock()
+        orchestrator.video_gen_prompt = "test"
+        orchestrator.existing_video_path = None
 
-        with patch.object(arena, "_video_generator_factory") as factory:
+        def mock_orch_run(judge, video_generator):
+            if video_generator.model == "bad-model":
+                raise RuntimeError("API down")
+            return _make_report(0.75)
+
+        with patch.object(arena, "_video_generator_factory") as factory, \
+             patch("video_judge.arena.VideoEvaluationOrchestrator") as MockOrch:
             gen_bad = MagicMock()
             gen_bad.model = "bad-model"
             gen_good = MagicMock()
             gen_good.model = "good-model"
             factory.return_value = [gen_bad, gen_good]
 
-            result = arena.fight(mock_orchestrator)
+            mock_orch_instance = MagicMock()
+            mock_orch_instance.run.side_effect = mock_orch_run
+            MockOrch.return_value = mock_orch_instance
+
+            result = arena.fight(orchestrator)
 
         assert result.winner == "good-model"
         assert len(result.results) == 1
@@ -107,14 +121,19 @@ class TestArenaFight:
         configs = [VideoGenModelConfig(provider="openai", model_id="bad")]
         arena = VideoGenArena(model_configs=configs, judge=mock_judge)
 
-        mock_orchestrator = MagicMock()
-        mock_orchestrator.video_gen_prompt = "test"
-        mock_orchestrator.run.side_effect = RuntimeError("fail")
+        orchestrator = MagicMock()
+        orchestrator.video_gen_prompt = "test"
+        orchestrator.existing_video_path = None
 
-        with patch.object(arena, "_video_generator_factory") as factory:
+        with patch.object(arena, "_video_generator_factory") as factory, \
+             patch("video_judge.arena.VideoEvaluationOrchestrator") as MockOrch:
             gen = MagicMock()
             gen.model = "bad"
             factory.return_value = [gen]
 
+            mock_orch_instance = MagicMock()
+            mock_orch_instance.run.side_effect = RuntimeError("fail")
+            MockOrch.return_value = mock_orch_instance
+
             with pytest.raises(RuntimeError, match="All models failed"):
-                arena.fight(mock_orchestrator)
+                arena.fight(orchestrator)
