@@ -1,0 +1,119 @@
+{
+  "models": [
+    {
+      "provider": "openai",
+      "model_id": "sora-2-pro",
+      "tier": "premium",
+      "description": "OpenAI Sora 2 Pro - SOTA quality with synced audio",
+      "notes": "Most expensive, best quality, native audio generation"
+    },
+    {
+      "provider": "openai",
+      "model_id": "sora-2",
+      "tier": "balanced",
+      "description": "OpenAI Sora 2 - High quality at lower cost than Pro",
+      "notes": "Good balance of quality and cost"
+    },
+    {
+      "provider": "google",
+      "model_id": "veo-3.1-generate-preview",
+      "tier": "premium",
+      "description": "Google Veo 3.1 - Advanced cinematic generation with audio",
+      "notes": "Excellent prompt adherence, cinematic styles"
+    },
+    {
+      "provider": "google",
+      "model_id": "veo-3.1-fast-generate-preview",
+      "tier": "balanced",
+      "description": "Google Veo 3.1 Fast - 2x faster, 70% cheaper than standard",
+      "notes": "Best cost/performance ratio, recommended for benchmarking"
+    },
+    {
+      "provider": "fal",
+      "model_id": "fal-ai/kling-video/o3/standard/text-to-video",
+      "tier": "premium",
+      "description": "Kling 3.0 - Multi-shot storyboarding, consistent characters",
+      "notes": "SOTA cinematic quality, fluid motion, Feb 2025 release"
+    },
+    {
+      "provider": "fal",
+      "model_id": "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video",
+      "tier": "balanced",
+      "description": "Seedance Pro Fast - Strong prompt alignment at 1080p",
+      "notes": "Excellent for testing prompt adherence"
+    },
+    {
+      "provider": "fal",
+      "model_id": "fal-ai/minimax/hailuo-2.3/pro/text-to-video",
+      "tier": "balanced",
+      "description": "Hailuo 2.3 Pro - Cinematic realism, improved physics",
+      "notes": "Strong motion physics, realistic rendering"
+    },
+    {
+      "provider": "fal",
+      "model_id": "fal-ai/luma-dream-machine/ray-2",
+      "tier": "balanced",
+      "description": "Luma Ray 2 - Natural motion with camera control",
+      "notes": "Great for dynamic camera movement prompts"
+    },
+    {
+      "provider": "fal",
+      "model_id": "fal-ai/luma-dream-machine/ray-2-flash",
+      "tier": "fast",
+      "description": "Luma Ray 2 Flash - Faster generation at lower cost",
+      "notes": "Good for quick iteration"
+    },
+    {
+      "provider": "fal",
+      "model_id": "fal-ai/minimax/hailuo-02/standard/text-to-video",
+      "tier": "fast",
+      "description": "Hailuo 02 Standard - Budget-friendly 768p",
+      "notes": "Good quality-to-cost ratio for testing"
+    }
+  ],
+  "benchmark_configs": {
+    "quick_benchmark": {
+      "description": "Fast comparison across tiers",
+      "models": [
+        "sora-2",
+        "veo-3.1-fast-generate-preview",
+        "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video"
+      ]
+    },
+    "premium_shootout": {
+      "description": "Best-in-class models only",
+      "models": [
+        "sora-2-pro",
+        "veo-3.1-generate-preview",
+        "fal-ai/kling-video/o3/standard/text-to-video"
+      ]
+    },
+    "balanced_arena": {
+      "description": "Mix of providers and quality tiers",
+      "models": [
+        "sora-2",
+        "veo-3.1-fast-generate-preview",
+        "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video",
+        "fal-ai/minimax/hailuo-2.3/pro/text-to-video",
+        "fal-ai/luma-dream-machine/ray-2"
+      ]
+    },
+    "cost_conscious": {
+      "description": "Fast/cheap models for iteration",
+      "models": [
+        "veo-3.1-fast-generate-preview",
+        "fal-ai/luma-dream-machine/ray-2-flash",
+        "fal-ai/minimax/hailuo-02/standard/text-to-video"
+      ]
+    }
+  },
+  "metadata": {
+    "last_updated": "2025-02-14",
+    "notes": [
+      "Sora 2 requires OpenAI API access (rolling out gradually)",
+      "Google Veo 3.1 available via Vertex AI / Gemini API",
+      "FAL models are most accessible with day-zero releases",
+      "Tier definitions: premium (best quality), balanced (quality/cost), fast (iteration speed)"
+    ]
+  }
+}

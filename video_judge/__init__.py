@@ -2,6 +2,7 @@
 
 from video_judge.arena import VideoGenArena
 from video_judge.judge import BaseJudge, GeminiJudge, OpenAIJudge
+from video_judge.decomposer import GeminiDecomposer, ClaudeDecomposer, OpenAIDecomposer, BaseDecomposer
 from video_judge.orchestrator import VideoEvaluationOrchestrator
 from video_judge.models import (
     VideoGenModelConfig,
@@ -24,4 +25,8 @@ __all__ = [
     "ArenaRun",
     "Report",
     "JudgeEval",
+    "BaseDecomposer",
+    "GeminiDecomposer",
+    "ClaudeDecomposer",
+    "OpenAIDecomposer",
 ]

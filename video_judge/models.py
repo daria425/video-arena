@@ -49,6 +49,7 @@ class ArenaReport(BaseModel):
     prompt: str
     results: List[ArenaRun]
     winner: str
+    rankings: List[str]
 
 
 class ArenaRunFailure(BaseModel):

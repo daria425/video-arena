@@ -42,3 +42,4 @@
   - score: Overall alignment score (0.0-1.0)
   - reason: Brief summary of alignment assessment
   - evidence: Structured list of frame-specific findings (frame number, timestamp, what you observed)
+  

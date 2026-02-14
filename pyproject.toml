@@ -46,13 +46,11 @@ dev = [
     "mypy>=1.4.1",
 ]
 
-[project.scripts]
-video-judge = "video_judge.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/video-judge"
-Repository = "https://github.com/yourusername/video-judge"
-Issues = "https://github.com/yourusername/video-judge/issues"
+Homepage = "https://github.com/daria425/video-judge"
+Repository = "https://github.com/daria425/video-judge"
+Issues = "https://github.com/daria425/video-judge/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

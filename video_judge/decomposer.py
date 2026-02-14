@@ -7,6 +7,7 @@ from video_judge.input_builders import (
 )
 from video_judge.utils.format import format_prompt
 from video_judge.models import PromptDecomposition
+from video_judge.config.logger import logger
 
 
 class BaseDecomposer(ABC):
@@ -32,11 +33,13 @@ class BaseDecomposer(ABC):
             "that judges can check against sampled video frames:\n\n"
             f"{user_prompt}"
         )
-        return self._call_api(
+        response = self._call_api(
             user_prompt=formatted_prompt,
             system_instruction=system_prompt,
             model=model or self.default_model,
         )
+        logger.info(f"Decomposition result: {response}")
+        return response
 
     @abstractmethod
     def _call_api(

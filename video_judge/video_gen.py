@@ -1,4 +1,5 @@
 import time
+import uuid
 from google.genai import types
 from datetime import datetime
 from typing import Optional
@@ -60,7 +61,8 @@ class FalVideoGenerator(BaseVideoGenerator):
 
     def run_video_gen(self, prompt: str, download_path: Optional[str] = None) -> VideoInfo:
         if download_path is None:
-            download_path = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+            unique_id = uuid.uuid4().hex[:8]
+            download_path = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{unique_id}.mp4"
         self.submit_request(prompt)
         result = self.get_result()
         logger.info("Video generation completed")
@@ -70,6 +72,9 @@ class FalVideoGenerator(BaseVideoGenerator):
         seed = result.get("seed", "")
         video_content = get_video(video_url)
         local_path = download_video(video_content, download_path)
+        if seed == "":  # some return empty string instead of omitting the field when seed is not provided, handle both cases
+            logger.warning("No seed returned from video generation API")
+            seed = None
         info = VideoInfo(
             video_url=video_url,
             saved_path=local_path,
@@ -124,7 +129,8 @@ class OpenAIVideoGenerator(BaseVideoGenerator):
 
     def run_video_gen(self, prompt: str, download_path: Optional[str] = None) -> VideoInfo:
         if download_path is None:
-            download_path = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+            unique_id = uuid.uuid4().hex[:8]
+            download_path = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{unique_id}.mp4"
 
         self.submit_request(prompt)
         result = self.get_result()
@@ -170,15 +176,15 @@ class GoogleVideoGenerator(BaseVideoGenerator):
 
             self.fetch_status()
             logger.info(
-                f"Completion status:{self._operation.done}")
+                f"Completion status:{self._operation.done is not None}")
             if self._operation.done:
-                content = self._operation.response.generated_videos[0]
-                uri = content.video.uri
-                video_content = get_video(uri)
+                video = self._operation.response.generated_videos[0]
+                video_bytes = google_client.client.files.download(
+                    file=video.video)
                 return {
                     "video": {
-                        "content": video_content,
-                        "file_size": len(video_content),
+                        "content": video_bytes,
+                        "file_size": len(video_bytes),
                     },
                     "seed": None
                 }
@@ -188,7 +194,8 @@ class GoogleVideoGenerator(BaseVideoGenerator):
 
     def run_video_gen(self, prompt: str, download_path: Optional[str] = None) -> VideoInfo:
         if download_path is None:
-            download_path = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+            unique_id = uuid.uuid4().hex[:8]
+            download_path = f"./output/videos/generated_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{unique_id}.mp4"
 
         self.submit_request(prompt)
         result = self.get_result()

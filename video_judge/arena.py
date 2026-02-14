@@ -78,7 +78,8 @@ class VideoGenArena:
 
         ranked = sorted(
             results, key=lambda x: x.report.scores["overall"], reverse=True)
-        return ArenaReport(prompt=prompt, results=ranked, winner=ranked[0].model)
+        model_rankings = [run.model for run in ranked]
+        return ArenaReport(prompt=prompt, results=ranked, winner=ranked[0].model, rankings=model_rankings)
 
     def fight(self, orchestrator: VideoEvaluationOrchestrator):
         """Begins a video generation competition among text-to-video models.
