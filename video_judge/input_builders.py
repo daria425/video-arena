@@ -30,6 +30,22 @@ def build_gemini_input_with_image_list(
     response_schema: Optional[Type[T]] = None,
     model: str = "gemini-2.5-pro",
 ):
+    """Call Gemini API with images and text prompts.
+
+    Args:
+        image_bytes_list: List of image bytes to send
+        user_prompt_list: List of text prompts (can exceed image count for text-only prompts)
+        system_instruction: System instruction for model behavior
+        response_schema: Optional Pydantic model for structured output
+        model: Gemini model ID (default: gemini-2.5-pro)
+
+    Returns:
+        Parsed Pydantic model if response_schema provided, otherwise raw text
+
+    Raises:
+        ValueError: If response is empty when schema is expected
+        GoogleAuthError, ClientError, ServerError: Propagated auth/client errors (no retry)
+    """
     parts = []
 
     for image_bytes, user_prompt in zip(image_bytes_list, user_prompt_list):
@@ -68,6 +84,104 @@ def build_gemini_input_with_image_list(
 
 @retry(
     retry=retry_if_not_exception_type(
+        (GoogleAuthError, ClientError, ServerError)),
+    wait=wait_fixed(3),
+    stop=stop_after_attempt(3)
+
+)
+def build_gemini_input_with_text(*, user_prompt: str, system_instruction: str, model, response_schema: Optional[Type[T]] = None,
+                                 ):
+    """Call Gemini API with text-only prompt.
+
+    Args:
+        user_prompt: Text prompt to send
+        system_instruction: System instruction for model behavior
+        response_schema: Optional Pydantic model for structured output
+        model: Gemini model ID
+
+    Returns:
+        Parsed Pydantic model if response_schema provided, otherwise raw text
+
+    Raises:
+        ValueError: If response is empty when schema is expected
+        GoogleAuthError, ClientError, ServerError: Propagated auth/client errors (no retry)
+    """
+    generation_config = types.GenerateContentConfig(
+        system_instruction=system_instruction,
+        temperature=0
+    )
+    parts = [
+        types.Part.from_text(text=user_prompt)
+    ]
+    if response_schema:
+        generation_config.response_schema = response_schema
+        generation_config.response_mime_type = "application/json"
+
+    contents = types.Content(role="user", parts=parts)
+    response = google_client.client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=generation_config,
+    )
+    logger.debug(f"Recieved response: {response}")
+    if response_schema:
+        parsed = response.parsed
+        if not parsed:
+            raise ValueError(
+                f"Gemini returned empty/invalid response for schema {response_schema.__name__}")
+        return parsed
+    return response.text
+
+
+@retry(
+    retry=retry_if_not_exception_type(
+        (AuthenticationError, RateLimitError, PermissionDeniedError)),
+    wait=wait_fixed(3),
+    stop=stop_after_attempt(3)
+
+)
+def build_openai_input_with_text(*, user_prompt: str, system_instruction: str, model: str, response_schema: Optional[Type[T]] = None):
+    """Call OpenAI API with text-only prompt.
+
+    Args:
+        user_prompt: Text prompt to send
+        system_instruction: System instruction for model behavior
+        response_schema: Optional Pydantic model for structured output
+        model: OpenAI model ID 
+
+    Returns:
+        Parsed Pydantic model if response_schema provided, otherwise raw text
+
+    Raises:
+        ValueError: If response is empty when schema is expected
+        AuthenticationError, RateLimitError, PermissionDeniedError: Propagated errors (no retry)
+    """
+    text_input = {
+        "type": "input_text",
+        "text": user_prompt
+    }
+    input_list = [
+        {"role": "user", "content": [
+            text_input
+        ]}
+    ]
+    if response_schema:
+        response = openai_client.client.responses.parse(model=model, temperature=0,
+                                                        text_format=response_schema, input=input_list, instructions=system_instruction)
+        parsed = response.output_parsed
+        if not parsed:
+            raise ValueError(
+                f"OpenAI returned empty/invalid response for schema {response_schema.__name__}")
+        return parsed
+    else:
+        response = openai_client.client.responses.create(
+            model=model, input=input_list, instructions=system_instruction, temperature=0
+        )
+        return response.output_text
+
+
+@retry(
+    retry=retry_if_not_exception_type(
         (AuthenticationError, RateLimitError, PermissionDeniedError)),
     wait=wait_fixed(3),
     stop=stop_after_attempt(3)
@@ -81,6 +195,22 @@ def build_openai_input_with_image_list(
     response_schema: Optional[Type[T]] = None,
     model: str = "gpt-4o",
 ):
+    """Call OpenAI API with images and text prompts.
+
+    Args:
+        image_bytes_list: List of image bytes to send
+        user_prompt_list: List of text prompts (can exceed image count for text-only prompts)
+        system_instruction: System instruction for model behavior
+        response_schema: Optional Pydantic model for structured output
+        model: OpenAI model ID
+
+    Returns:
+        Parsed Pydantic model if response_schema provided, otherwise raw text
+
+    Raises:
+        ValueError: If response is empty when schema is expected
+        AuthenticationError, RateLimitError, PermissionDeniedError: Propagated errors (no retry)
+    """
     input_list = [
         {"role": "user", "content": []}
     ]
@@ -124,6 +254,21 @@ def build_claude_input_with_image_list(
     response_schema: Optional[Type[T]] = None,
     model: str = "claude-sonnet-3-5",
 ):
+    """Call Anthropic Claude API with images and text prompts.
+
+    Args:
+        image_bytes_list: List of image bytes to send
+        user_prompt_list: List of text prompts (can exceed image count for text-only prompts)
+        system_instruction: System instruction for model behavior
+        response_schema: Optional Pydantic model for structured output
+        model: Claude model ID (default: claude-sonnet-3-5)
+
+    Returns:
+        Parsed Pydantic model if response_schema provided, otherwise Message object
+
+    Raises:
+        ValueError: If response is empty when schema is expected
+    """
     input_list = [
         {"role": "user", "content": []}
     ]
@@ -170,3 +315,56 @@ def build_claude_input_with_image_list(
             system=system_instruction
         )
         return response
+
+
+def build_claude_input_with_text(
+    *,
+    user_prompt: str,
+    system_instruction: str,
+    model,
+    response_schema: Optional[Type[T]] = None,
+):
+    """Call Anthropic Claude API with text-only prompt.
+
+    Args:
+        user_prompt: Text prompt to send
+        system_instruction: System instruction for model behavior
+        response_schema: Optional Pydantic model for structured output
+        model: Claude model ID (default: claude-sonnet-3-5)
+
+    Returns:
+        Parsed Pydantic model if response_schema provided, otherwise Message object
+
+    Raises:
+        ValueError: If response is empty when schema is expected
+    """
+    input_list = [
+        {"role": "user", "content": [
+            {
+                "type": "text",
+                "text": user_prompt
+            }
+        ]}
+    ]
+
+    if response_schema:
+        response = anthropic_client.client.messages.parse(
+            messages=input_list,
+            model=model,
+            output_format=response_schema,
+            temperature=0,
+            system=system_instruction
+        )
+        parsed = response.parsed_output
+        if not parsed:
+            raise ValueError(
+                f"Claude returned empty/invalid response for schema {response_schema.__name__}")
+        return parsed
+    else:
+        response = anthropic_client.client.messages.create(
+            messages=input_list,
+            model=model,
+            temperature=0,
+            system=system_instruction
+        )
+        return response.content[0].text
