@@ -1,7 +1,7 @@
 import streamlit as st
 import json
-from video_judge import VideoGenArena, VideoEvaluationOrchestrator, VideoGenModelConfig, OpenAIJudge, OpenAIDecomposer, ClaudeDecomposer, ClaudeJudge, GeminiDecomposer, GeminiJudge, BaseDecomposer, BaseJudge
-
+from video_judge import VideoGenArena, VideoGenModelConfig, OpenAIJudge, OpenAIDecomposer, ClaudeDecomposer, ClaudeJudge, GeminiDecomposer, GeminiJudge, BaseDecomposer, BaseJudge
+from video_judge.config.logger import setup_default_logging
 JUDGES = {
     "OpenAI": OpenAIJudge,
     "Gemini": GeminiJudge,
@@ -12,6 +12,7 @@ DECOMPOSERS = {
     "Gemini": GeminiDecomposer,
     "Claude": ClaudeDecomposer,
 }
+setup_default_logging(level=20)
 st.set_page_config(page_title="Video Generation Arena", layout="wide")
 st.title("Video Generation Arena")
 st.caption("A comparison of text-to-video models across multiple evaluation criteria using automated LLM-as-a-judge evals.")
@@ -35,12 +36,45 @@ if st.button("Fight!"):
         judge: BaseJudge = JUDGES[judge_selection]()
         decomposer: BaseDecomposer = DECOMPOSERS[decomposer_selection]()
         decomposition = decomposer.decompose(user_prompt=prompt)
-        orchestrator = VideoEvaluationOrchestrator(
-            video_gen_prompt=prompt, prompt_decomposition=decomposition)
+        # orchestrator = VideoEvaluationOrchestrator(
+        #     video_gen_prompt=prompt, prompt_decomposition=decomposition)
         configs = [
             VideoGenModelConfig(provider=available_models[m]["provider"], model_id=m) for m in selected_models
         ]
         arena = VideoGenArena(model_configs=configs, judge=judge)
-        result = arena.fight(orchestrator)
+        result = arena.fight(
+            video_gen_prompt=prompt, existing_video_path=None, prompt_decomposition=decomposition)
         st.session_state["latest_result"] = result
     st.success(f"Evaluation complete! Winner: {result.winner}")
+    st.rerun()
+
+if "latest_result" in st.session_state:
+    result = st.session_state["latest_result"]
+    st.subheader("Final Rankings")
+    for i, model in enumerate(result.rankings, 1):
+        score = next(r.report.scores['overall']
+                     for r in result.results if r.model == model)
+        st.write(f"**{model}** — {score:.3f}")
+    cols = st.columns(len(result.results))
+
+    for col, run in zip(cols, result.results):
+        with col:
+            st.subheader(run.model)
+            st.video(run.report.video_path, width=300)
+            st.metric("Overall Score", f"{run.report.scores['overall']:.2f}")
+
+            with st.expander("Breakdown"):
+                for criteria in ["prompt_alignment", "temporal_consistency",
+                                 "aesthetic_quality", "technical_quality"]:
+                    score = run.report.scores[criteria]
+                    st.write(
+                        f"**{criteria.replace('_', ' ').title()}**: {score:.2f}")
+
+            # Evidence
+            with st.expander("Evidence"):
+                for detail in run.report.details:
+                    st.write(f"**{detail['criteria']}**")
+                    st.caption(detail['reasoning'])
+                    if 'evidence' in detail:
+                        for ev in detail['evidence']:
+                            st.write(f"- Frame {ev['frame']}: {ev['finding']}")

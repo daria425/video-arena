@@ -5,7 +5,7 @@ from video_judge.judge import BaseJudge
 from video_judge.video_gen import FalVideoGenerator, BaseVideoGenerator, OpenAIVideoGenerator, GoogleVideoGenerator
 from video_judge.orchestrator import VideoEvaluationOrchestrator
 from video_judge.config.logger import logger
-from video_judge.models import ArenaRun, ArenaReport, ArenaRunFailure, VideoGenModelConfig
+from video_judge.models import ArenaRun, ArenaReport, ArenaRunFailure, VideoGenModelConfig, PromptDecomposition
 
 
 class VideoGenArena:
@@ -31,21 +31,22 @@ class VideoGenArena:
         return video_generators
 
     def _evaluate_model(self, generator: BaseVideoGenerator, judge: BaseJudge,
-                        prompt: str, existing_video_path: Optional[str] = None) -> ArenaRun:
+                        prompt: str, existing_video_path: Optional[str] = None, prompt_decomposition: Optional[PromptDecomposition] = None) -> ArenaRun:
         """Run a single model's full pipeline (generation + evaluation).
 
         Creates a fresh orchestrator per model to avoid shared state.
         """
         orchestrator = VideoEvaluationOrchestrator(
             video_gen_prompt=prompt,
-            existing_video_path=existing_video_path
+            existing_video_path=existing_video_path,
+            prompt_decomposition=prompt_decomposition
         )
         logger.info(f"Starting evaluation run for model: {generator.model}")
         report = orchestrator.run(judge=judge, video_generator=generator)
         logger.debug(f"Report for model {generator.model}: {report}")
         return ArenaRun(model=generator.model, report=report)
 
-    async def _fight_async(self, prompt: str, existing_video_path: Optional[str] = None):
+    async def _fight_async(self, prompt: str, existing_video_path: Optional[str] = None, prompt_decomposition: Optional[PromptDecomposition] = None):
         """Run all models in parallel using thread pool."""
         generators = self._video_generator_factory()
         loop = asyncio.get_event_loop()
@@ -55,7 +56,7 @@ class VideoGenArena:
                 loop.run_in_executor(
                     pool,
                     self._evaluate_model,
-                    gen, self.judge, prompt, existing_video_path
+                    gen, self.judge, prompt, existing_video_path, prompt_decomposition
                 )
                 for gen in generators
             ]
@@ -81,13 +82,14 @@ class VideoGenArena:
         model_rankings = [run.model for run in ranked]
         return ArenaReport(prompt=prompt, results=ranked, winner=ranked[0].model, rankings=model_rankings)
 
-    def fight(self, orchestrator: VideoEvaluationOrchestrator):
+    def fight(self, video_gen_prompt: str, existing_video_path: Optional[str] = None, prompt_decomposition: Optional[PromptDecomposition] = None):
         """Begins a video generation competition among text-to-video models.
 
         Runs all models in parallel. Each model gets its own orchestrator
         instance to avoid shared mutable state.
         """
         return asyncio.run(self._fight_async(
-            prompt=orchestrator.video_gen_prompt,
-            existing_video_path=orchestrator.existing_video_path
+            prompt=video_gen_prompt,
+            existing_video_path=existing_video_path,
+            prompt_decomposition=prompt_decomposition
         ))

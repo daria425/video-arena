@@ -17,8 +17,6 @@ with open("model_config.json", "r") as f:
 
 decomposer = OpenAIDecomposer()
 prompt_decomposition = decomposer.decompose(user_prompt=prompt)
-video_eval_orchestrator = VideoEvaluationOrchestrator(
-    video_gen_prompt=prompt, prompt_decomposition=prompt_decomposition)
 judge = OpenAIJudge()
 
 # configs = [VideoGenModelConfig(provider="openai", model_id="sora-2"), VideoGenModelConfig(
@@ -27,6 +25,9 @@ configs = [
     VideoGenModelConfig(provider=model_config["provider"], model_id=model_config["model_id"]) for model_config in model_config_data["models"]
 ]
 arena = VideoGenArena(model_configs=configs, judge=judge)
-result = arena.fight(video_eval_orchestrator)
+result = arena.fight(video_gen_prompt=prompt,
+                     prompt_decomposition=prompt_decomposition,
+                     existing_video_path=None
+                     )
 with open(f"output/arena_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:
     f.write(result.model_dump_json(indent=2))

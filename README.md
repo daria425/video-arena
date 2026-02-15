@@ -2,66 +2,47 @@
 
 **LLM-as-a-Judge evaluation framework for text-to-video models**
 
-Arena-style competitive benchmarking for video generation models using multi-criteria LLM evaluation.
+Arena-style competitive benchmarking for video generation models using multi-criteria LLM-as-a-judge evaluation.
 
-## Installation
+<img src="./ss2.png">
+<img src="./ss1.png">
 
-```bash
-# Clone the repository
-git clone https://github.com/daria425/video-judge.git
-cd video-judge
-
-# Install dependencies
-pip install -e .
-
-# Or with dev dependencies
-pip install -e ".[dev]"
-```
-
----
-
-## Quick Start
+## Example
 
 ```python
+import json
 from video_judge import (
-    VideoGenArena,
     VideoEvaluationOrchestrator,
     OpenAIJudge,
     VideoGenModelConfig,
+    VideoGenArena,
     OpenAIDecomposer
 )
+from video_judge.config.logger import setup_default_logging
+from datetime import datetime
 
-# Define prompt
-prompt = "A sleek sci-fi rocketship launching from a lavender field at sunset"
+setup_default_logging(level=20)
+prompt = "A sleek sci-fi rocketship launching vertically from the center of a vast lavender field at sunset. Endless rows of blooming purple lavender stretch toward the horizon, gently swaying from the rocket’s exhaust. The sky is filled with soft purple and pink clouds, glowing with warm golden sunset light. The rocket emits a bright white-violet flame and glowing thrusters, creating swirling dust and petals near the ground. Cinematic wide shot, epic scale, fantasy sci-fi atmosphere, soft volumetric lighting, shallow haze near the horizon, high detail, smooth motion, dramatic yet serene mood."
+with open("model_config.json", "r") as f:
+    model_config_data = json.load(f)
 
-# Decompose prompt for structured evaluation
 decomposer = OpenAIDecomposer()
-decomposition = decomposer.decompose(prompt)
+prompt_decomposition = decomposer.decompose(user_prompt=prompt)
+judge = OpenAIJudge()
 
-# Setup orchestrator
-orchestrator = VideoEvaluationOrchestrator(
-    video_gen_prompt=prompt,
-    prompt_decomposition=decomposition
-)
-
-# Define competing models
+# configs = [VideoGenModelConfig(provider="openai", model_id="sora-2"), VideoGenModelConfig(
+#     provider="fal", model_id="fal-ai/bytedance/seedance/v1/pro/fast/text-to-video")]
 configs = [
-    VideoGenModelConfig(provider="openai", model_id="sora-2"),
-    VideoGenModelConfig(provider="google", model_id="veo-3.1-fast-generate-preview"),
-    VideoGenModelConfig(provider="fal", model_id="fal-ai/bytedance/seedance/v1/pro/fast/text-to-video")
+    VideoGenModelConfig(provider=model_config["provider"], model_id=model_config["model_id"]) for model_config in model_config_data["models"]
 ]
-
-# Run arena
-arena = VideoGenArena(model_configs=configs, judge=OpenAIJudge())
-result = arena.fight(orchestrator)
-
-# View results
-print(f"🏆 Winner: {result.winner}")
-for run in result.results:
-    print(f"{run.model}: {run.report.scores['overall']:.3f}")
+arena = VideoGenArena(model_configs=configs, judge=judge)
+result = arena.fight(video_gen_prompt=prompt,
+                     prompt_decomposition=prompt_decomposition,
+                     existing_video_path=None
+                     )
+with open(f"output/arena_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:
+    f.write(result.model_dump_json(indent=2))
 ```
-
-See `main.py` for a complete example with config loading.
 
 ---
 
