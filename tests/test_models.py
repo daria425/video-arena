@@ -63,6 +63,7 @@ class TestReport:
             input={"prompt": "rocket", "video_id": "abc"},
             scores={"overall": 0.7},
             details=[{"criteria": "prompt_alignment", "score": 0.7, "reasoning": "good"}],
+            video_path="/fake/video.mp4",
         )
         data = report.model_dump()
         assert data["scores"]["overall"] == 0.7
@@ -74,11 +75,13 @@ class TestArenaReport:
             input={"prompt": "test"},
             scores={"overall": 0.8},
             details=[],
+            video_path="/fake/video.mp4",
         )
         arena = ArenaReport(
             prompt="test",
             results=[ArenaRun(model="sora-2", report=report)],
             winner="sora-2",
+            rankings=["sora-2"],
         )
         assert arena.winner == "sora-2"
         assert len(arena.results) == 1

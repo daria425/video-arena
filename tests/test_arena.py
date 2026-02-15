@@ -15,6 +15,7 @@ def _make_report(overall: float) -> Report:
             "overall": overall,
         },
         details=[],
+        video_path="/fake/video.mp4",
     )
 
 

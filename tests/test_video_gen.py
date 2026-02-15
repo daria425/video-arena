@@ -84,19 +84,20 @@ class TestGoogleVideoGenerator:
             initial_operation)
 
     @patch("video_judge.video_gen.google_client")
-    @patch("video_judge.video_gen.get_video")
     @patch("video_judge.video_gen.time.sleep")
-    def test_get_result_success(self, mock_sleep, mock_get_video, mock_google):
+    def test_get_result_success(self, mock_sleep, mock_google):
         mock_video_content = b"fake_video_content"
-        mock_get_video.return_value = mock_video_content
 
         # Mock the operation to be done on first check
         mock_operation = MagicMock()
         mock_operation.done = True
         mock_operation.error = None
-        mock_operation.response.generated_videos = [MagicMock()]
-        mock_operation.response.generated_videos[0].video.uri = "gs://bucket/video.mp4"
 
+        mock_video = MagicMock()
+        mock_operation.response.generated_videos = [mock_video]
+
+        # Mock files.download to return the video bytes
+        mock_google.client.files.download.return_value = mock_video_content
         mock_google.client.operations.get.return_value = mock_operation
 
         gen = GoogleVideoGenerator()
@@ -106,7 +107,7 @@ class TestGoogleVideoGenerator:
         assert result["video"]["content"] == mock_video_content
         assert result["video"]["file_size"] == len(mock_video_content)
         assert result["seed"] is None
-        mock_get_video.assert_called_once_with("gs://bucket/video.mp4")
+        mock_google.client.files.download.assert_called_once_with(file=mock_video.video)
 
     @patch("video_judge.video_gen.google_client")
     @patch("video_judge.video_gen.time.sleep")

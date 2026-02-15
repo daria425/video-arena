@@ -16,6 +16,7 @@ class TestRunNodes:
         """run_nodes should produce scores for all 4 criteria + overall."""
         orch = VideoEvaluationOrchestrator(video_gen_prompt="test prompt")
         orch.input_data = {"prompt": "test prompt", "video_id": "v1"}
+        orch.existing_video_path = "/fake/video.mp4"
 
         mock_judge = MagicMock()
         mock_judge.evaluate.side_effect = [
@@ -41,6 +42,7 @@ class TestRunNodes:
         """overall = 0.5*alignment + 0.3*temporal + 0.1*aesthetic + 0.1*technical."""
         orch = VideoEvaluationOrchestrator(video_gen_prompt="test")
         orch.input_data = {"prompt": "test", "video_id": "v1"}
+        orch.existing_video_path = "/fake/video.mp4"
 
         mock_judge = MagicMock()
         mock_judge.evaluate.side_effect = [

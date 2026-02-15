@@ -21,6 +21,7 @@ class VideoEvaluationOrchestrator:
         self.input_data = {}
         self.existing_video_path = existing_video_path
         self.prompt_decomposition = prompt_decomposition
+        self.saved_video_path = None
 
     def _format_decomposition(self, decomposition: PromptDecomposition) -> str:
         """Format PromptDecomposition into checklist text."""
@@ -87,6 +88,7 @@ class VideoEvaluationOrchestrator:
         if self.prompt_decomposition:
             user_prompts.append(self._format_decomposition(
                 self.prompt_decomposition))
+        self.saved_video_path = video_path
 
         return (image_bytes_list, user_prompts)
 
@@ -111,7 +113,6 @@ class VideoEvaluationOrchestrator:
         if self.prompt_decomposition:
             user_prompts.append(self._format_decomposition(
                 self.prompt_decomposition))
-
         return (image_bytes_list, user_prompts)
 
     def run_nodes(self, images: List[bytes], user_prompts: List[str], judge: BaseJudge) -> Report:
@@ -173,7 +174,8 @@ class VideoEvaluationOrchestrator:
                     ], weights=[0.5, 0.3, 0.1, 0.1])
         scores["overall"] = overall
         return Report(input=self.input_data, scores=scores,
-                      details=details)
+                      # create_judge_input_from_video doesnt generate new video so use existing bc saved_video path will be None
+                      details=details, video_path=self.saved_video_path or self.existing_video_path)
 
     def run(self, judge: BaseJudge, video_generator: BaseVideoGenerator) -> Report:
         if self.existing_video_path:

@@ -38,6 +38,7 @@ class Report(BaseModel):
     input: Dict[str, Any]
     scores: Dict[str, float]
     details: List[Dict]
+    video_path: str
 
 
 class ArenaRun(BaseModel):

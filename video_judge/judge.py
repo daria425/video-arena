@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import List
-from video_judge.input_builders import build_gemini_input_with_image_list, build_openai_input_with_image_list
+from video_judge.input_builders import build_gemini_input_with_image_list, build_openai_input_with_image_list, build_claude_input_with_image_list
 from video_judge.models import JudgeEval
 
 
@@ -33,5 +33,14 @@ class OpenAIJudge(BaseJudge):
 
     def evaluate(self, images, user_prompts, system_prompt, **kwargs):
         response: JudgeEval = build_openai_input_with_image_list(
+            image_bytes_list=images, user_prompt_list=user_prompts, system_instruction=system_prompt, response_schema=JudgeEval, ** kwargs)
+        return response
+
+
+class ClaudeJudge(BaseJudge):
+    """Claude-API based LLM judge"""
+
+    def evaluate(self, images, user_prompts, system_prompt, **kwargs):
+        response: JudgeEval = build_claude_input_with_image_list(
             image_bytes_list=images, user_prompt_list=user_prompts, system_instruction=system_prompt, response_schema=JudgeEval, ** kwargs)
         return response

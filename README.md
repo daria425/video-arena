@@ -2,167 +2,174 @@
 
 **LLM-as-a-Judge evaluation framework for text-to-video models**
 
-Arena-style competitive benchmarking for video generation models using LLM as a judge evaluation.
-
----
+Arena-style competitive benchmarking for video generation models using multi-criteria LLM evaluation.
 
 ## Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/video-judge.git
+git clone https://github.com/daria425/video-judge.git
 cd video-judge
 
-# Install in editable mode
+# Install dependencies
 pip install -e .
 
-# Or install with dev dependencies
+# Or with dev dependencies
 pip install -e ".[dev]"
 ```
 
-### CLI Usage
+---
 
-**Run an arena competition:**
-
-```bash
-video-judge arena \
-  --prompt "A rocket launching from a lavender field at sunset" \
-  --models openai:sora-2 fal:seedance \
-  --judge openai \
-  --output results.json
-```
-
-**Evaluate a single video:**
-
-```bash
-video-judge eval \
-  --video output/my_video.mp4 \
-  --prompt "A rocket launching" \
-  --judge gemini
-```
-
-### Programmatic Usage
+## Quick Start
 
 ```python
-from video_judge import VideoGenArena, OpenAIJudge, VideoGenModelConfig
+from video_judge import (
+    VideoGenArena,
+    VideoEvaluationOrchestrator,
+    OpenAIJudge,
+    VideoGenModelConfig,
+    OpenAIDecomposer
+)
 
-# Define models to compete
+# Define prompt
+prompt = "A sleek sci-fi rocketship launching from a lavender field at sunset"
+
+# Decompose prompt for structured evaluation
+decomposer = OpenAIDecomposer()
+decomposition = decomposer.decompose(prompt)
+
+# Setup orchestrator
+orchestrator = VideoEvaluationOrchestrator(
+    video_gen_prompt=prompt,
+    prompt_decomposition=decomposition
+)
+
+# Define competing models
 configs = [
     VideoGenModelConfig(provider="openai", model_id="sora-2"),
+    VideoGenModelConfig(provider="google", model_id="veo-3.1-fast-generate-preview"),
     VideoGenModelConfig(provider="fal", model_id="fal-ai/bytedance/seedance/v1/pro/fast/text-to-video")
 ]
 
 # Run arena
 arena = VideoGenArena(model_configs=configs, judge=OpenAIJudge())
-result = arena.fight(prompt="A rocket launching from a field")
+result = arena.fight(orchestrator)
 
-print(f"Winner: {result.winner}")
-print(f"Score: {result.results[0].report.scores['overall']}")
+# View results
+print(f"🏆 Winner: {result.winner}")
+for run in result.results:
+    print(f"{run.model}: {run.report.scores['overall']:.3f}")
 ```
 
-See `main.py` for a complete example.
-
-## CLI Commands
-
-### `video-judge arena`
-
-Run arena competition between multiple video generation models.
-
-**Required:**
-
-- `--prompt, -p`: Video generation prompt
-- `--models, -m`: Model specs (format: `provider:model_id`)
-
-**Optional:**
-
-- `--judge, -j`: Judge to use (default: `openai`)
-- `--output, -o`: Output path for results JSON
-- `--existing-video, -e`: Use existing video for testing
-- `--verbose, -v`: Enable verbose logging
-
-**Example:**
-
-```bash
-video-judge arena \
-  -p "A cinematic shot of a rocket launch" \
-  -m openai:sora-2 \
-  -m fal:seedance \
-  -j openai \
-  -o my_results.json
-```
-
-### `video-judge eval`
-
-Evaluate a single existing video.
-
-**Required:**
-
-- `--video, -v`: Path to video file
-- `--prompt, -p`: Original generation prompt
-
-**Optional:**
-
-- `--judge, -j`: Judge to use (default: `openai`)
-- `--output, -o`: Output path for results JSON
-- `--verbose`: Enable verbose logging
-
-**Example:**
-
-```bash
-video-judge eval \
-  -v output/my_video.mp4 \
-  -p "A rocket launching" \
-  -j gemini
-```
+See `main.py` for a complete example with config loading.
 
 ---
 
-## Environment Variables
+## Supported Models
+
+### OpenAI
+
+- `sora-2-pro` - Premium quality with synced audio
+- `sora-2` - High quality, lower cost
+
+### Google Veo
+
+- `veo-3.1-generate-preview` - Advanced cinematic generation
+- `veo-3.1-fast-generate-preview` - 2x faster, 70% cheaper
+
+### FAL (ByteDance, Kuaishou, Luma, MiniMax)
+
+- `fal-ai/kling-video/o3/standard/text-to-video` - Kling 3.0 multi-shot
+- `fal-ai/bytedance/seedance/v1/pro/fast/text-to-video` - Seedance Pro Fast
+- `fal-ai/minimax/hailuo-2.3/pro/text-to-video` - Hailuo 2.3 cinematic
+- `fal-ai/luma-dream-machine/ray-2` - Luma Ray 2 motion
+
+See `model_config.json` for full list and benchmark presets.
+
+---
+
+## Configuration
 
 Create a `.env` file with your API keys:
 
 ```bash
-# Required for Gemini judge
-GEMINI_API_KEY=your_key_here
-
-# Required for OpenAI judge or Sora generation
+# Required for video generation
 OPENAI_API_KEY=your_key_here
-
-# Required for FAL generation
+GEMINI_API_KEY=your_key_here
 FAL_KEY=your_key_here
 
-# Optional for Anthropic/Claude
+# Optional for Claude judge/decomposer
 ANTHROPIC_API_KEY=your_key_here
 ```
+
+Model configuration in `model_config.json`:
+
+```json
+{
+  "models": [
+    {
+      "provider": "google",
+      "model_id": "veo-3.1-fast-generate-preview",
+      "tier": "balanced"
+    }
+  ],
+  "benchmark_configs": {
+    "quick_benchmark": {
+      "models": ["sora-2", "veo-3.1-fast", "seedance"]
+    }
+  }
+}
+```
+
+---
+
+## Evaluation Criteria
+
+**Prompt Alignment (50% weight)** - Entities, actions, attributes match prompt
+**Temporal Consistency (30% weight)** - Stable identity, no jumps or morphing
+**Aesthetic Quality (10% weight)** - Composition, lighting, cinematography
+**Technical Quality (10% weight)** - No artifacts, deformations, or glitches
+
+Each criterion scored 0.0-1.0 with frame-level evidence and reasoning.
 
 ---
 
 ## Output Format
 
-### Arena Report
-
 ```json
 {
-  "prompt": "A rocket launching from a field",
+  "prompt": "A rocket launching...",
   "results": [
     {
-      "model": "sora-2",
+      "model": "veo-3.1-fast-generate-preview",
       "report": {
-        "input": {
-          "prompt": "...",
-          "video_id": "..."
-        },
         "scores": {
-          "prompt_alignment": 0.9,
-          "temporal_consistency": 0.85,
-          "aesthetic_quality": 0.8,
+          "prompt_alignment": 0.92,
+          "temporal_consistency": 0.88,
+          "aesthetic_quality": 0.85,
           "technical_quality": 0.9,
-          "overall": 0.875
+          "overall": 0.9
         },
-        "details": [...]
+        "details": [
+          {
+            "criteria": "prompt_alignment",
+            "score": 0.92,
+            "reasoning": "All entities present...",
+            "evidence": [
+              {
+                "frame": 0,
+                "timestamp": 0.0,
+                "finding": "Rocket visible in center"
+              }
+            ]
+          }
+        ]
       }
     }
   ],
-  "winner": "sora-2"
+  "winner": "veo-3.1-fast-generate-preview",
+  "rankings": ["veo-3.1-fast-generate-preview", "sora-2", "seedance"]
 }
 ```
+
+---
